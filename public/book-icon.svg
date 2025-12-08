@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bookGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect x="15" y="10" width="70" height="80" rx="5" fill="url(#bookGradient)"/>
+  <rect x="20" y="15" width="55" height="70" rx="3" fill="#fff" opacity="0.9"/>
+  <rect x="25" y="25" width="35" height="4" rx="2" fill="#6366f1"/>
+  <rect x="25" y="35" width="45" height="3" rx="1.5" fill="#a5b4fc"/>
+  <rect x="25" y="42" width="40" height="3" rx="1.5" fill="#a5b4fc"/>
+  <rect x="25" y="49" width="42" height="3" rx="1.5" fill="#a5b4fc"/>
+  <circle cx="50" cy="68" r="8" fill="#6366f1"/>
+  <path d="M47 68 L49 70 L54 65" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
