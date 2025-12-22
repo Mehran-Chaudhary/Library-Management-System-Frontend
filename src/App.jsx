@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import { Navbar, Footer } from "./components";
+import { Navbar, Footer, ProtectedRoute } from "./components";
 import {
   Home,
   BookDetails,
@@ -7,6 +7,8 @@ import {
   Confirmation,
   Dashboard,
   Contact,
+  Login,
+  Register,
 } from "./pages";
 import "./App.css";
 
@@ -16,12 +18,38 @@ function App() {
       <Navbar />
       <main className="main-content">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/book/:id" element={<BookDetails />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout/confirmation" element={<Confirmation />} />
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* Protected Routes - require authentication */}
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <Cart />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/checkout/confirmation"
+            element={
+              <ProtectedRoute>
+                <Confirmation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
       <Footer />

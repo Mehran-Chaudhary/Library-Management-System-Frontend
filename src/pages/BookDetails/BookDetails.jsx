@@ -11,6 +11,7 @@ import {
   Clock,
   Star,
   User,
+  AlertCircle,
 } from "lucide-react";
 import {
   Button,
@@ -20,8 +21,8 @@ import {
   Input,
   Select,
 } from "../../components";
-import { getBookById } from "../../data";
-import { useUser } from "../../context";
+import { bookService, reviewService } from "../../services";
+import { useUser, useAuth } from "../../context";
 import {
   AVAILABILITY_STATUS,
   BORROWING_DURATIONS,
@@ -33,6 +34,7 @@ import styles from "./BookDetails.module.css";
 const BookDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const {
     addToWishlist,
     removeFromWishlist,
@@ -43,7 +45,9 @@ const BookDetails = () => {
   } = useUser();
 
   const [book, setBook] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
   const [reserveForm, setReserveForm] = useState({
     pickupDate: getMinPickupDate(),
@@ -51,19 +55,44 @@ const BookDetails = () => {
   });
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const foundBook = getBookById(id);
-      setBook(foundBook);
-      setIsLoading(false);
-    }, 500);
+    const fetchBook = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const [bookData, bookReviews] = await Promise.all([
+          bookService.getBookById(id),
+          reviewService.getReviewsByBook(id).catch(() => []),
+        ]);
+        
+        setBook(bookData);
+        setReviews(bookReviews || []);
+      } catch (err) {
+        console.error("Error fetching book:", err);
+        setError(err.message || "Failed to load book details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchBook();
   }, [id]);
 
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
         <LoadingSpinner size="large" text="Loading book details..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.notFound}>
+        <AlertCircle size={48} />
+        <h2>Error Loading Book</h2>
+        <p>{error}</p>
+        <Button onClick={() => navigate("/")}>Go Back Home</Button>
       </div>
     );
   }
@@ -78,10 +107,25 @@ const BookDetails = () => {
     );
   }
 
+  // Handle both backend and legacy data structures
+  const availableCopies = book.availableCopies ?? 0;
+  const totalCopies = book.totalCopies ?? 0;
+  const status = book.status || (availableCopies > 0 ? AVAILABILITY_STATUS.AVAILABLE : AVAILABILITY_STATUS.BORROWED);
+  const isAvailable = status === AVAILABILITY_STATUS.AVAILABLE && availableCopies > 0;
+  
+  const authorName = book.authors
+    ? book.authors.map(a => a.name).join(", ")
+    : book.author || "Unknown Author";
+  
+  const genreName = book.genres && book.genres.length > 0
+    ? book.genres.map(g => g.name).join(", ")
+    : book.genre || "General";
+  
+  const coverImage = book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
+  const bookRating = book.averageRating || book.rating || 0;
+
   const inWishlist = isInWishlist(book.id);
   const inCart = isInCart(book.id);
-  const isAvailable =
-    book.status === AVAILABILITY_STATUS.AVAILABLE && book.availableCopies > 0;
 
   const handleWishlistToggle = () => {
     if (inWishlist) {
@@ -97,9 +141,9 @@ const BookDetails = () => {
   };
 
   const getStatusBadgeClass = () => {
-    switch (book.status) {
+    switch (status) {
       case AVAILABILITY_STATUS.AVAILABLE:
-        return book.availableCopies > 0 ? styles.available : styles.unavailable;
+        return availableCopies > 0 ? styles.available : styles.unavailable;
       case AVAILABILITY_STATUS.RESERVED:
         return styles.reserved;
       case AVAILABILITY_STATUS.BORROWED:
@@ -120,25 +164,25 @@ const BookDetails = () => {
         <div className={styles.imageSection}>
           <div className={styles.imageWrapper}>
             <img
-              src={book.coverImage}
+              src={coverImage}
               alt={book.title}
               className={styles.coverImage}
             />
             <span className={`${styles.statusBadge} ${getStatusBadgeClass()}`}>
-              {book.status}
+              {status}
             </span>
           </div>
         </div>
 
         <div className={styles.detailsSection}>
-          <span className={styles.genre}>{book.genre}</span>
+          <span className={styles.genre}>{genreName}</span>
           <h1 className={styles.title}>{book.title}</h1>
-          <p className={styles.author}>by {book.author}</p>
+          <p className={styles.author}>by {authorName}</p>
 
           <div className={styles.ratingSection}>
-            <Rating value={book.rating} size="large" />
+            <Rating value={bookRating} size="large" />
             <span className={styles.reviewCount}>
-              ({book.reviews.length} reviews)
+              ({reviews.length} reviews)
             </span>
           </div>
 
@@ -147,23 +191,25 @@ const BookDetails = () => {
           <div className={styles.metaGrid}>
             <div className={styles.metaItem}>
               <Hash size={18} />
-              <span>ISBN: {book.isbn}</span>
+              <span>ISBN: {book.isbn || "N/A"}</span>
             </div>
             <div className={styles.metaItem}>
               <Building2 size={18} />
-              <span>{book.publisher}</span>
+              <span>{book.publisher || "Unknown Publisher"}</span>
             </div>
             <div className={styles.metaItem}>
               <Calendar size={18} />
               <span>
                 {book.publicationYear > 0
                   ? book.publicationYear
-                  : `${Math.abs(book.publicationYear)} BC`}
+                  : book.publicationYear
+                  ? `${Math.abs(book.publicationYear)} BC`
+                  : "Unknown"}
               </span>
             </div>
             <div className={styles.metaItem}>
               <BookOpen size={18} />
-              <span>{book.pageCount} pages</span>
+              <span>{book.pageCount || "N/A"} pages</span>
             </div>
           </div>
 
@@ -171,11 +217,11 @@ const BookDetails = () => {
             <div className={styles.availabilityInfo}>
               <span className={styles.copiesLabel}>Availability:</span>
               <span className={styles.copiesValue}>
-                {book.availableCopies} of {book.totalCopies} copies available
+                {availableCopies} of {totalCopies} copies available
               </span>
             </div>
             {book.expectedReturnDate &&
-              book.status === AVAILABILITY_STATUS.BORROWED && (
+              status === AVAILABILITY_STATUS.BORROWED && (
                 <div className={styles.returnDate}>
                   <Clock size={18} />
                   <span>
@@ -188,7 +234,13 @@ const BookDetails = () => {
           <div className={styles.actions}>
             {isAvailable ? (
               <Button
-                onClick={() => setIsReserveModalOpen(true)}
+                onClick={() => {
+                  if (isAuthenticated) {
+                    setIsReserveModalOpen(true);
+                  } else {
+                    navigate("/login", { state: { from: { pathname: `/book/${book.id}` } } });
+                  }
+                }}
                 disabled={inCart || !canAddToCart}
                 icon={ShoppingCart}
                 size="large"
@@ -222,16 +274,20 @@ const BookDetails = () => {
           <Star size={24} />
           Reviews & Ratings
         </h2>
-        {book.reviews.length > 0 ? (
+        {reviews.length > 0 ? (
           <div className={styles.reviewsList}>
-            {book.reviews.map((review) => (
+            {reviews.map((review) => (
               <div key={review.id} className={styles.reviewCard}>
                 <div className={styles.reviewHeader}>
                   <div className={styles.reviewUser}>
                     <div className={styles.avatar}>
                       <User size={20} />
                     </div>
-                    <span className={styles.userName}>{review.user}</span>
+                    <span className={styles.userName}>
+                      {review.user?.firstName 
+                        ? `${review.user.firstName} ${review.user.lastName || ""}`
+                        : review.user || "Anonymous"}
+                    </span>
                   </div>
                   <Rating
                     value={review.rating}
@@ -241,7 +297,7 @@ const BookDetails = () => {
                 </div>
                 <p className={styles.reviewComment}>{review.comment}</p>
                 <span className={styles.reviewDate}>
-                  {formatDate(review.date)}
+                  {formatDate(review.createdAt || review.date)}
                 </span>
               </div>
             ))}
@@ -262,10 +318,10 @@ const BookDetails = () => {
       >
         <div className={styles.reserveModal}>
           <div className={styles.reserveBookInfo}>
-            <img src={book.coverImage} alt={book.title} />
+            <img src={coverImage} alt={book.title} />
             <div>
               <h4>{book.title}</h4>
-              <p>{book.author}</p>
+              <p>{authorName}</p>
             </div>
           </div>
           <Input

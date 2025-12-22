@@ -17,8 +17,25 @@ const BookCard = ({ book }) => {
 
   const inWishlist = isInWishlist(book.id);
   const inCart = isInCart(book.id);
-  const isAvailable =
-    book.status === AVAILABILITY_STATUS.AVAILABLE && book.availableCopies > 0;
+  
+  // Handle both backend and legacy data structures
+  const availableCopies = book.availableCopies ?? 0;
+  const totalCopies = book.totalCopies ?? 0;
+  const status = book.status || (availableCopies > 0 ? AVAILABILITY_STATUS.AVAILABLE : AVAILABILITY_STATUS.BORROWED);
+  const isAvailable = status === AVAILABILITY_STATUS.AVAILABLE && availableCopies > 0;
+  
+  // Handle authors from backend (array) or legacy (string)
+  const authorName = book.authors
+    ? book.authors.map(a => a.name).join(", ")
+    : book.author || "Unknown Author";
+  
+  // Handle genres from backend (array) or legacy (string)
+  const genreName = book.genres && book.genres.length > 0
+    ? book.genres[0].name
+    : book.genre || "General";
+  
+  // Cover image with fallback
+  const coverImage = book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
 
   const handleWishlistClick = (e) => {
     e.preventDefault();
@@ -39,9 +56,9 @@ const BookCard = ({ book }) => {
   };
 
   const getStatusClass = () => {
-    switch (book.status) {
+    switch (status) {
       case AVAILABILITY_STATUS.AVAILABLE:
-        return book.availableCopies > 0 ? styles.available : styles.unavailable;
+        return availableCopies > 0 ? styles.available : styles.unavailable;
       case AVAILABILITY_STATUS.RESERVED:
         return styles.reserved;
       case AVAILABILITY_STATUS.BORROWED:
@@ -52,19 +69,16 @@ const BookCard = ({ book }) => {
   };
 
   const getStatusText = () => {
-    if (
-      book.status === AVAILABILITY_STATUS.AVAILABLE &&
-      book.availableCopies === 0
-    ) {
+    if (status === AVAILABILITY_STATUS.AVAILABLE && availableCopies === 0) {
       return "Unavailable";
     }
-    return book.status;
+    return status;
   };
 
   return (
     <Link to={`/book/${book.id}`} className={styles.card}>
       <div className={styles.imageWrapper}>
-        <img src={book.coverImage} alt={book.title} className={styles.image} />
+        <img src={coverImage} alt={book.title} className={styles.image} />
         <div className={styles.overlay}>
           <button
             className={`${styles.actionBtn} ${inWishlist ? styles.active : ""}`}
@@ -90,13 +104,13 @@ const BookCard = ({ book }) => {
         {book.isNewArrival && <span className={styles.newBadge}>New</span>}
       </div>
       <div className={styles.content}>
-        <span className={styles.genre}>{book.genre}</span>
+        <span className={styles.genre}>{genreName}</span>
         <h3 className={styles.title}>{book.title}</h3>
-        <p className={styles.author}>by {book.author}</p>
+        <p className={styles.author}>by {authorName}</p>
         <div className={styles.footer}>
-          <Rating value={book.rating} size="small" />
+          <Rating value={book.averageRating || book.rating || 0} size="small" />
           <span className={styles.copies}>
-            {book.availableCopies}/{book.totalCopies} available
+            {availableCopies}/{totalCopies} available
           </span>
         </div>
       </div>

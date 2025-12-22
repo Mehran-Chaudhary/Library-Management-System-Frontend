@@ -170,12 +170,12 @@
     display: flex;
   }
 
-  .iconBtn:not(.menuBtn) {
+  .authButtons {
     display: none;
   }
 
-  .iconBtn:first-of-type {
-    display: flex;
+  .userName {
+    display: none;
   }
 }
 
@@ -183,4 +183,154 @@
   .logoText {
     font-size: 1.25rem;
   }
+}
+
+/* User Menu Styles */
+.userMenu {
+  position: relative;
+}
+
+.userBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border: none;
+  border-radius: 0.75rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.userBtn:hover {
+  background: var(--bg-tertiary);
+}
+
+.avatar {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-color), #818cf8);
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 50%;
+}
+
+.userName {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.userBtn svg:last-child {
+  transition: transform 0.2s ease;
+}
+
+.userBtn svg.rotated {
+  transform: rotate(180deg);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 220px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.dropdownHeader {
+  padding: 1rem;
+  background: var(--bg-secondary);
+}
+
+.dropdownName {
+  display: block;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.dropdownEmail {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: var(--border-color);
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dropdownItem:hover {
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+}
+
+/* Auth Buttons */
+.authButtons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loginBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: var(--bg-secondary);
+  border: none;
+  border-radius: 0.5rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loginBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--primary-color);
+}
+
+.registerBtn {
+  padding: 0.625rem 1.25rem;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 0.5rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.registerBtn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
 }

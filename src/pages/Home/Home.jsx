@@ -5,39 +5,91 @@ import {
   CategoryFilter,
   LoadingSpinner,
 } from "../../components";
-import { books, getFeaturedBooks, getNewArrivals } from "../../data";
-import { Sparkles, TrendingUp, ChevronRight } from "lucide-react";
+import { bookService, genreService } from "../../services";
+import { Sparkles, TrendingUp, ChevronRight, AlertCircle } from "lucide-react";
 import styles from "./Home.module.css";
 
 const Home = () => {
+  const [books, setBooks] = useState([]);
+  const [featuredBooks, setFeaturedBooks] = useState([]);
+  const [newArrivals, setNewArrivals] = useState([]);
+  const [genres, setGenres] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Fetch all data on mount
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Fetch all data in parallel
+        const [booksResponse, featured, arrivals, genreList] = await Promise.all([
+          bookService.getBooks(),
+          bookService.getFeaturedBooks(10),
+          bookService.getNewArrivals(10),
+          genreService.getGenres().catch(() => []),
+        ]);
+
+        setBooks(booksResponse.data || []);
+        setFeaturedBooks(featured || []);
+        setNewArrivals(arrivals || []);
+        
+        // Prepare genre list with "All" as first option
+        const genreNames = genreList?.map(g => g.name) || [];
+        setGenres(["All", ...genreNames]);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError(err.message || "Failed to load books. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const featuredBooks = useMemo(() => getFeaturedBooks(), []);
-  const newArrivals = useMemo(() => getNewArrivals(), []);
-
+  // Filter books based on search and genre
   const filteredBooks = useMemo(() => {
     return books.filter((book) => {
+      const title = book.title || "";
+      const authorName = book.authors?.map(a => a.name).join(" ") || book.author || "";
+      
       const matchesSearch =
-        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchQuery.toLowerCase());
+        title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        authorName.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const bookGenre = book.genres?.map(g => g.name) || [book.genre];
       const matchesGenre =
-        selectedGenre === "All" || book.genre === selectedGenre;
+        selectedGenre === "All" || bookGenre.includes(selectedGenre);
+      
       return matchesSearch && matchesGenre;
     });
-  }, [searchQuery, selectedGenre]);
+  }, [books, searchQuery, selectedGenre]);
 
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
         <LoadingSpinner size="large" text="Loading library..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.errorContainer}>
+        <AlertCircle size={48} className={styles.errorIcon} />
+        <h2>Oops! Something went wrong</h2>
+        <p>{error}</p>
+        <button 
+          className={styles.retryBtn}
+          onClick={() => window.location.reload()}
+        >
+          Try Again
+        </button>
       </div>
     );
   }
@@ -68,7 +120,7 @@ const Home = () => {
               <span className={styles.statLabel}>Books</span>
             </div>
             <div className={styles.stat}>
-              <span className={styles.statValue}>12</span>
+              <span className={styles.statValue}>{genres.length - 1}</span>
               <span className={styles.statLabel}>Categories</span>
             </div>
             <div className={styles.stat}>
@@ -82,7 +134,7 @@ const Home = () => {
             {featuredBooks.slice(0, 3).map((book, index) => (
               <img
                 key={book.id}
-                src={book.coverImage}
+                src={book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop"}
                 alt={book.title}
                 className={styles.stackedBook}
                 style={{ "--index": index }}
@@ -93,22 +145,24 @@ const Home = () => {
       </section>
 
       {/* Featured Books Section */}
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <div className={styles.sectionTitle}>
-            <Sparkles className={styles.sectionIcon} size={28} />
-            <h2>Featured Books</h2>
+      {featuredBooks.length > 0 && (
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitle}>
+              <Sparkles className={styles.sectionIcon} size={28} />
+              <h2>Featured Books</h2>
+            </div>
+            <button className={styles.viewAllBtn}>
+              View All <ChevronRight size={18} />
+            </button>
           </div>
-          <button className={styles.viewAllBtn}>
-            View All <ChevronRight size={18} />
-          </button>
-        </div>
-        <div className={styles.featuredGrid}>
-          {featuredBooks.map((book) => (
-            <BookCard key={book.id} book={book} />
-          ))}
-        </div>
-      </section>
+          <div className={styles.featuredGrid}>
+            {featuredBooks.map((book) => (
+              <BookCard key={book.id} book={book} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* New Arrivals Section */}
       {newArrivals.length > 0 && (
@@ -138,6 +192,7 @@ const Home = () => {
           <CategoryFilter
             selected={selectedGenre}
             onChange={setSelectedGenre}
+            categories={genres}
           />
         </div>
         {filteredBooks.length > 0 ? (

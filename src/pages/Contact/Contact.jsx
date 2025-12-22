@@ -1,19 +1,24 @@
 import { useState } from "react";
-import { Send, MapPin, Phone, Mail, Clock, CheckCircle } from "lucide-react";
+import { Send, MapPin, Phone, Mail, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { Button, Input } from "../../components";
+import { contactService } from "../../services";
+import { useAuth } from "../../context";
 import { validateForm } from "../../utils";
 import styles from "./Contact.module.css";
 
 const Contact = () => {
+  const { isAuthenticated, user } = useAuth();
+  
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
+    fullName: user ? `${user.firstName} ${user.lastName}` : "",
+    email: user?.email || "",
     subject: "",
     message: "",
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -21,6 +26,7 @@ const Contact = () => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+    if (submitError) setSubmitError(null);
   };
 
   const handleSubmit = async (e) => {
@@ -39,12 +45,23 @@ const Contact = () => {
     }
 
     setIsSubmitting(true);
+    setSubmitError(null);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+    try {
+      // Use authenticated endpoint if logged in, public otherwise
+      if (isAuthenticated) {
+        await contactService.sendAuthenticatedMessage(formData);
+      } else {
+        await contactService.sendMessage(formData);
+      }
+      
+      setIsSubmitted(true);
+    } catch (err) {
+      console.error("Error sending message:", err);
+      setSubmitError(err.message || "Failed to send message. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -63,8 +80,8 @@ const Contact = () => {
             onClick={() => {
               setIsSubmitted(false);
               setFormData({
-                fullName: "",
-                email: "",
+                fullName: user ? `${user.firstName} ${user.lastName}` : "",
+                email: user?.email || "",
                 subject: "",
                 message: "",
               });
@@ -88,6 +105,14 @@ const Contact = () => {
         <div className={styles.formSection}>
           <div className={styles.formCard}>
             <h2>Send us a Message</h2>
+            
+            {submitError && (
+              <div className={styles.errorAlert}>
+                <AlertCircle size={18} />
+                <span>{submitError}</span>
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit} className={styles.form}>
               <Input
                 label="Full Name"
