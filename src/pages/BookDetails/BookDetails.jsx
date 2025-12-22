@@ -62,11 +62,11 @@ const BookDetails = () => {
       try {
         const [bookData, bookReviews] = await Promise.all([
           bookService.getBookById(id),
-          reviewService.getReviewsByBook(id).catch(() => []),
+          reviewService.getBookReviews(id).catch(() => ({ data: [] })),
         ]);
         
-        setBook(bookData);
-        setReviews(bookReviews || []);
+        setBook(bookData.data);
+        setReviews(bookReviews.data || []);
       } catch (err) {
         console.error("Error fetching book:", err);
         setError(err.message || "Failed to load book details");
@@ -110,18 +110,24 @@ const BookDetails = () => {
   // Handle both backend and legacy data structures
   const availableCopies = book.availableCopies ?? 0;
   const totalCopies = book.totalCopies ?? 0;
-  const status = book.status || (availableCopies > 0 ? AVAILABILITY_STATUS.AVAILABLE : AVAILABILITY_STATUS.BORROWED);
-  const isAvailable = status === AVAILABILITY_STATUS.AVAILABLE && availableCopies > 0;
+  
+  // Backend returns lowercase status: "available", "borrowed", "reserved", "maintenance"
+  const status = book.status?.toUpperCase() || (availableCopies > 0 ? "AVAILABLE" : "BORROWED");
+  const isAvailable = (status === "AVAILABLE" && availableCopies > 0) || (book.status?.toLowerCase() === "available" && availableCopies > 0);
   
   const authorName = book.authors
     ? book.authors.map(a => a.name).join(", ")
     : book.author || "Unknown Author";
   
-  const genreName = book.genres && book.genres.length > 0
-    ? book.genres.map(g => g.name).join(", ")
-    : book.genre || "General";
+  // Handle genres properly - ensure it's always a string
+  let genreName = "General";
+  if (book.genres && Array.isArray(book.genres) && book.genres.length > 0) {
+    genreName = book.genres.map(g => g.name).join(", ");
+  } else if (book.genre) {
+    genreName = typeof book.genre === 'string' ? book.genre : (book.genre?.name || "General");
+  }
   
-  const coverImage = book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
+  const coverImage = book.coverImageUrl || book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
   const bookRating = book.averageRating || book.rating || 0;
 
   const inWishlist = isInWishlist(book.id);
@@ -141,16 +147,27 @@ const BookDetails = () => {
   };
 
   const getStatusBadgeClass = () => {
-    switch (status) {
-      case AVAILABILITY_STATUS.AVAILABLE:
+    const upperStatus = status.toUpperCase();
+    switch (upperStatus) {
+      case "AVAILABLE":
         return availableCopies > 0 ? styles.available : styles.unavailable;
-      case AVAILABILITY_STATUS.RESERVED:
+      case "RESERVED":
         return styles.reserved;
-      case AVAILABILITY_STATUS.BORROWED:
+      case "BORROWED":
         return styles.borrowed;
+      case "MAINTENANCE":
+        return styles.maintenance;
       default:
         return "";
     }
+  };
+  
+  const getStatusText = () => {
+    if (status === "AVAILABLE" && availableCopies === 0) {
+      return "Unavailable";
+    }
+    // Display user-friendly status text
+    return status.charAt(0) + status.slice(1).toLowerCase();
   };
 
   return (
@@ -169,7 +186,7 @@ const BookDetails = () => {
               className={styles.coverImage}
             />
             <span className={`${styles.statusBadge} ${getStatusBadgeClass()}`}>
-              {status}
+              {getStatusText()}
             </span>
           </div>
         </div>
@@ -221,7 +238,7 @@ const BookDetails = () => {
               </span>
             </div>
             {book.expectedReturnDate &&
-              status === AVAILABILITY_STATUS.BORROWED && (
+              status === "BORROWED" && (
                 <div className={styles.returnDate}>
                   <Clock size={18} />
                   <span>

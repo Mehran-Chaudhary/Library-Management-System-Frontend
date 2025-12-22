@@ -1,7 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authService } from '../services';
+import authService from '../services/authService';
+import userService from '../services/userService';
 
-const AuthContext = createContext();
+/**
+ * Authentication Context
+ * Provides authentication state and methods throughout the application
+ */
+
+const AuthContext = createContext(null);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -26,16 +32,23 @@ export const AuthProvider = ({ children }) => {
         if (storedUser && token) {
           // Verify token is still valid by fetching profile
           try {
-            const profile = await authService.getProfile();
-            setUser(profile);
-          } catch {
+            const userData = await authService.getCurrentUser();
+            setUser(userData);
+            
+            // Apply dark mode preference
+            if (userData.darkModeEnabled) {
+              document.documentElement.classList.add('dark');
+            }
+          } catch (err) {
             // Token is invalid, clear storage
+            console.error('Token validation failed:', err);
             authService.logout();
             setUser(null);
           }
         }
       } catch (err) {
         console.error('Auth initialization error:', err);
+        setError(err.message);
       } finally {
         setIsLoading(false);
       }
@@ -44,13 +57,18 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
+  /**
+   * Login user
+   * @param {string} email - User email
+   * @param {string} password - User password
+   */
   const login = useCallback(async (email, password) => {
     setError(null);
     setIsLoading(true);
     try {
-      const data = await authService.login(email, password);
-      setUser(data.user);
-      return data;
+      const response = await authService.login(email, password);
+      setUser(response.data.user);
+      return response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -59,13 +77,17 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  /**
+   * Register new user
+   * @param {Object} userData - User registration data
+   */
   const register = useCallback(async (userData) => {
     setError(null);
     setIsLoading(true);
     try {
-      const data = await authService.register(userData);
-      setUser(data.user);
-      return data;
+      const response = await authService.register(userData);
+      setUser(response.data.user);
+      return response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -74,21 +96,86 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  /**
+   * Logout user
+   */
   const logout = useCallback(() => {
     authService.logout();
     setUser(null);
     setError(null);
   }, []);
 
+  /**
+   * Refresh user profile
+   * Fetches the latest user data from the server
+   */
   const refreshProfile = useCallback(async () => {
     try {
-      const profile = await authService.getProfile();
-      setUser(profile);
-      return profile;
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+      return userData;
     } catch (err) {
       console.error('Failed to refresh profile:', err);
       throw err;
     }
+  }, []);
+
+  /**
+   * Update user profile
+   * @param {Object} updates - Profile fields to update
+   */
+  const updateProfile = useCallback(async (updates) => {
+    try {
+      const response = await userService.updateUserProfile(updates);
+      setUser(response.data);
+      return response;
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Change password
+   * @param {string} oldPassword - Current password
+   * @param {string} newPassword - New password
+   */
+  const changePassword = useCallback(async (oldPassword, newPassword) => {
+    try {
+      const response = await authService.changePassword(oldPassword, newPassword);
+      return response;
+    } catch (err) {
+      console.error('Failed to change password:', err);
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Toggle dark mode
+   * @param {boolean} enabled - Whether to enable dark mode
+   */
+  const toggleDarkMode = useCallback(async (enabled) => {
+    try {
+      const response = await userService.toggleDarkMode(enabled);
+      
+      // Update user state
+      setUser(prev => ({
+        ...prev,
+        darkModeEnabled: enabled,
+      }));
+      
+      return response;
+    } catch (err) {
+      console.error('Failed to toggle dark mode:', err);
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Clear error state
+   */
+  const clearError = useCallback(() => {
+    setError(null);
   }, []);
 
   const value = {
@@ -100,7 +187,10 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     refreshProfile,
-    clearError: () => setError(null),
+    updateProfile,
+    changePassword,
+    toggleDarkMode,
+    clearError,
   };
 
   return (

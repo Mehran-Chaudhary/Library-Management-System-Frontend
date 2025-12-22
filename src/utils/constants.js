@@ -35,9 +35,10 @@ export const EXTENSION_DAYS = 7;
 
 // Availability statuses
 export const AVAILABILITY_STATUS = {
-  AVAILABLE: "Available",
-  RESERVED: "Reserved",
-  BORROWED: "Borrowed",
+  AVAILABLE: "AVAILABLE",
+  RESERVED: "RESERVED",
+  BORROWED: "BORROWED",
+  MAINTENANCE: "MAINTENANCE",
 };
 
 // Local storage keys

@@ -81,7 +81,7 @@ const Cart = () => {
       bookId: item.bookId,
       title: item.book.title,
       author: item.book.author,
-      coverImage: item.book.coverImage,
+      coverImage: item.book.coverImageUrl || item.book.coverImage,
       pickupDate: item.pickupDate,
       duration: item.duration,
       dueDate: calculateDueDate(item.pickupDate, item.duration).toISOString(),
@@ -130,16 +130,27 @@ const Cart = () => {
           </div>
 
           <div className={styles.cartItems}>
-            {cartBooks.map((item) => (
-              <div key={item.bookId} className={styles.cartItem}>
-                <Link to={`/book/${item.bookId}`} className={styles.bookInfo}>
-                  <img src={item.book.coverImage} alt={item.book.title} />
-                  <div>
-                    <h3>{item.book.title}</h3>
-                    <p>{item.book.author}</p>
-                    <span className={styles.genre}>{item.book.genre}</span>
-                  </div>
-                </Link>
+            {cartBooks.map((item) => {
+              // Handle genre from backend (array) or legacy (string)
+              const genreName = item.book.genres && item.book.genres.length > 0
+                ? item.book.genres[0].name
+                : (typeof item.book.genre === 'string' ? item.book.genre : item.book.genre?.name || 'General');
+              
+              // Handle author from backend (array) or legacy (string)
+              const authorName = item.book.authors
+                ? item.book.authors.map(a => a.name).join(", ")
+                : item.book.author || "Unknown Author";
+              
+              return (
+                <div key={item.bookId} className={styles.cartItem}>
+                  <Link to={`/book/${item.bookId}`} className={styles.bookInfo}>
+                    <img src={item.book.coverImage} alt={item.book.title} />
+                    <div>
+                      <h3>{item.book.title}</h3>
+                      <p>{authorName}</p>
+                      <span className={styles.genre}>{genreName}</span>
+                    </div>
+                  </Link>
 
                 <div className={styles.itemOptions}>
                   <div className={styles.optionGroup}>
@@ -198,7 +209,8 @@ const Cart = () => {
                   <Trash2 size={20} />
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

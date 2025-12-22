@@ -1,75 +1,159 @@
 import api from './api';
 
-export const authService = {
-  // Register a new user
+/**
+ * Authentication Service
+ * Handles all authentication-related API calls
+ */
+
+const authService = {
+  /**
+   * Register a new user
+   * @param {Object} userData - User registration data
+   * @returns {Promise} Response with user data and access token
+   */
   async register(userData) {
-    const response = await api.post('/auth/register', {
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      email: userData.email,
-      password: userData.password,
-      phone: userData.phone || null,
-      address: userData.address || null,
-    });
-    
-    // Store token and user data
-    if (response.data?.accessToken) {
-      localStorage.setItem('booknest_token', response.data.accessToken);
-      localStorage.setItem('booknest_user', JSON.stringify(response.data.user));
+    try {
+      const response = await api.post('/auth/register', {
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone || '',
+        address: userData.address || '',
+      });
+      
+      // Store token and user data in localStorage
+      if (response.data?.accessToken) {
+        localStorage.setItem('accessToken', response.data.accessToken);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
     }
-    
-    return response.data;
   },
 
-  // Login user
+  /**
+   * Login user
+   * @param {string} email - User email
+   * @param {string} password - User password
+   * @returns {Promise} Response with user data and access token
+   */
   async login(email, password) {
-    const response = await api.post('/auth/login', { email, password });
-    
-    // Store token and user data
-    if (response.data?.accessToken) {
-      localStorage.setItem('booknest_token', response.data.accessToken);
-      localStorage.setItem('booknest_user', JSON.stringify(response.data.user));
+    try {
+      const response = await api.post('/auth/login', { 
+        email, 
+        password 
+      });
+      
+      // Store token and user data
+      if (response.data?.accessToken) {
+        localStorage.setItem('accessToken', response.data.accessToken);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Apply dark mode preference if enabled
+        if (response.data.user?.darkModeEnabled) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-    
-    return response.data;
   },
 
-  // Get current user profile
-  async getProfile() {
-    const response = await api.get('/auth/me');
-    return response.data;
+  /**
+   * Get current user profile
+   * @returns {Promise} Current user profile data
+   */
+  async getCurrentUser() {
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await api.get('/auth/me');
+      
+      // Update stored user data
+      if (response.data) {
+        localStorage.setItem('user', JSON.stringify(response.data));
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Get current user error:', error);
+      // If token is expired or invalid, clear storage
+      if (error.message.includes('401') || error.message.includes('token')) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+      }
+      throw error;
+    }
   },
 
-  // Change password
+  /**
+   * Change user password
+   * @param {string} oldPassword - Current password
+   * @param {string} newPassword - New password
+   * @returns {Promise} Success response
+   */
   async changePassword(oldPassword, newPassword) {
-    const response = await api.post('/auth/change-password', {
-      oldPassword,
-      newPassword,
-    });
-    return response;
+    try {
+      const response = await api.post('/auth/change-password', {
+        oldPassword,
+        newPassword,
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Change password error:', error);
+      throw error;
+    }
   },
 
-  // Logout user
+  /**
+   * Logout user
+   * Clears all authentication data from localStorage
+   */
   logout() {
-    localStorage.removeItem('booknest_token');
-    localStorage.removeItem('booknest_user');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+    document.documentElement.classList.remove('dark');
   },
 
-  // Check if user is authenticated
+  /**
+   * Check if user is authenticated
+   * @returns {boolean} True if authenticated
+   */
   isAuthenticated() {
-    return !!localStorage.getItem('booknest_token');
+    return !!localStorage.getItem('accessToken');
   },
 
-  // Get stored user
+  /**
+   * Get stored user from localStorage
+   * @returns {Object|null} User object or null
+   */
   getStoredUser() {
-    const user = localStorage.getItem('booknest_user');
+    const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
 
-  // Get stored token
+  /**
+   * Get stored token from localStorage
+   * @returns {string|null} Token or null
+   */
   getToken() {
-    return localStorage.getItem('booknest_token');
+    return localStorage.getItem('accessToken');
   },
 };
 
 export default authService;
+

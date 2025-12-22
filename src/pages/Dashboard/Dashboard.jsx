@@ -57,18 +57,18 @@ const Dashboard = () => {
 
       try {
         const [borrowings, reservations, history, wishlist, stats] = await Promise.all([
-          borrowingService.getActiveBorrowings().catch(() => []),
-          reservationService.getActiveReservations().catch(() => []),
-          reservationService.getReservationHistory().catch(() => []),
-          wishlistService.getWishlist().catch(() => []),
-          borrowingService.getDashboardStats().catch(() => null),
+          borrowingService.getActiveBorrowings().catch(() => ({ data: [] })),
+          reservationService.getActiveReservations().catch(() => ({ data: [] })),
+          reservationService.getReservationHistory().catch(() => ({ data: [] })),
+          wishlistService.getWishlist().catch(() => ({ data: [] })),
+          borrowingService.getDashboardStats().catch(() => ({ data: null })),
         ]);
 
-        setActiveBorrowings(borrowings || []);
-        setActiveReservations(reservations || []);
-        setReservationHistory(history || []);
-        setWishlistItems(wishlist || []);
-        setDashboardStats(stats);
+        setActiveBorrowings(borrowings.data || []);
+        setActiveReservations(reservations.data || []);
+        setReservationHistory(history.data || []);
+        setWishlistItems(wishlist.data || []);
+        setDashboardStats(stats.data);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError(err.message || "Failed to load dashboard data");
@@ -89,7 +89,7 @@ const Dashboard = () => {
         setActiveBorrowings(prev => 
           prev.map(b => 
             b.id === extendModal.borrowing.id 
-              ? { ...b, dueDate: result.newDueDate, hasBeenExtended: true }
+              ? { ...b, dueDate: result.data.newDueDate, hasBeenExtended: true }
               : b
           )
         );
@@ -113,8 +113,8 @@ const Dashboard = () => {
           prev.filter(r => r.id !== cancelModal.reservationId)
         );
         // Refresh history
-        const history = await reservationService.getReservationHistory().catch(() => []);
-        setReservationHistory(history || []);
+        const history = await reservationService.getReservationHistory().catch(() => ({ data: [] }));
+        setReservationHistory(history.data || []);
         setCancelModal({ isOpen: false, reservationId: null });
       } catch (err) {
         console.error("Error cancelling reservation:", err);
@@ -345,7 +345,7 @@ const Dashboard = () => {
                     <div className={styles.reservationBooks}>
                       {(reservation.items || reservation.books || []).map((item) => {
                         const book = item.book || item;
-                        const coverImage = book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
+                        const coverImage = book.coverImageUrl || book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
                         return (
                           <div key={book.id || item.bookId} className={styles.miniBook}>
                             <img src={coverImage} alt={book.title} />
@@ -394,7 +394,7 @@ const Dashboard = () => {
               <div className={styles.wishlistGrid}>
                 {wishlistItems.map((item) => {
                   const book = item.book || item;
-                  const coverImage = book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
+                  const coverImage = book.coverImageUrl || book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
                   const authorName = book.authors?.map(a => a.name).join(", ") || book.author || "Unknown";
                   const genreName = book.genres?.[0]?.name || book.genre || "General";
                   

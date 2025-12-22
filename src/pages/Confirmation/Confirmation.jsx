@@ -76,12 +76,18 @@ const Confirmation = () => {
 
           <div className={styles.booksList}>
             <h3>Reserved Books</h3>
-            {latestReservation.books.map((book) => (
-              <div key={book.bookId} className={styles.bookItem}>
-                <img src={book.coverImage} alt={book.title} />
-                <div className={styles.bookDetails}>
-                  <h4>{book.title}</h4>
-                  <p>{book.author}</p>
+            {latestReservation.books.map((book) => {
+              // Handle author from backend (array) or legacy (string)
+              const authorName = book.authors
+                ? book.authors.map(a => a.name).join(", ")
+                : book.author || "Unknown Author";
+              
+              return (
+                <div key={book.bookId} className={styles.bookItem}>
+                  <img src={book.coverImageUrl || book.coverImage} alt={book.title} />
+                  <div className={styles.bookDetails}>
+                    <h4>{book.title}</h4>
+                    <p>{authorName}</p>
                   <div className={styles.dates}>
                     <span>
                       <Calendar size={14} /> Pickup:{" "}
@@ -93,7 +99,8 @@ const Confirmation = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className={styles.actions}>
@@ -129,12 +136,18 @@ const Confirmation = () => {
               Reserved Books ({latestReservation.books.length})
             </h2>
             <div className={styles.booksGrid}>
-              {latestReservation.books.map((book) => (
-                <div key={book.bookId} className={styles.summaryBook}>
-                  <img src={book.coverImage} alt={book.title} />
-                  <div>
-                    <h4>{book.title}</h4>
-                    <p>{book.author}</p>
+              {latestReservation.books.map((book) => {
+                // Handle author from backend (array) or legacy (string)
+                const authorName = book.authors
+                  ? book.authors.map(a => a.name).join(", ")
+                  : book.author || "Unknown Author";
+                
+                return (
+                  <div key={book.bookId} className={styles.summaryBook}>
+                    <img src={book.coverImageUrl || book.coverImage} alt={book.title} />
+                    <div>
+                      <h4>{book.title}</h4>
+                      <p>{authorName}</p>
                     <div className={styles.bookDates}>
                       <span>
                         <Calendar size={14} /> Pickup:{" "}
@@ -146,7 +159,8 @@ const Confirmation = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

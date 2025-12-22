@@ -21,8 +21,11 @@ const BookCard = ({ book }) => {
   // Handle both backend and legacy data structures
   const availableCopies = book.availableCopies ?? 0;
   const totalCopies = book.totalCopies ?? 0;
-  const status = book.status || (availableCopies > 0 ? AVAILABILITY_STATUS.AVAILABLE : AVAILABILITY_STATUS.BORROWED);
-  const isAvailable = status === AVAILABILITY_STATUS.AVAILABLE && availableCopies > 0;
+  
+  // Backend returns lowercase status: "available", "borrowed", "reserved", "maintenance"
+  // Convert to uppercase for consistency
+  const status = (book.status?.toUpperCase() || (availableCopies > 0 ? "AVAILABLE" : "BORROWED"));
+  const isAvailable = (status === "AVAILABLE" && availableCopies > 0) || (book.status?.toLowerCase() === "available" && availableCopies > 0);
   
   // Handle authors from backend (array) or legacy (string)
   const authorName = book.authors
@@ -30,12 +33,15 @@ const BookCard = ({ book }) => {
     : book.author || "Unknown Author";
   
   // Handle genres from backend (array) or legacy (string)
-  const genreName = book.genres && book.genres.length > 0
-    ? book.genres[0].name
-    : book.genre || "General";
+  let genreName = "General";
+  if (book.genres && Array.isArray(book.genres) && book.genres.length > 0) {
+    genreName = book.genres[0].name || "General";
+  } else if (book.genre) {
+    genreName = typeof book.genre === 'string' ? book.genre : (book.genre?.name || "General");
+  }
   
-  // Cover image with fallback
-  const coverImage = book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
+  // Cover image with fallback - backend uses coverImageUrl
+  const coverImage = book.coverImageUrl || book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
 
   const handleWishlistClick = (e) => {
     e.preventDefault();
@@ -56,23 +62,27 @@ const BookCard = ({ book }) => {
   };
 
   const getStatusClass = () => {
-    switch (status) {
-      case AVAILABILITY_STATUS.AVAILABLE:
+    const upperStatus = status.toUpperCase();
+    switch (upperStatus) {
+      case "AVAILABLE":
         return availableCopies > 0 ? styles.available : styles.unavailable;
-      case AVAILABILITY_STATUS.RESERVED:
+      case "RESERVED":
         return styles.reserved;
-      case AVAILABILITY_STATUS.BORROWED:
+      case "BORROWED":
         return styles.borrowed;
+      case "MAINTENANCE":
+        return styles.maintenance;
       default:
         return "";
     }
   };
 
   const getStatusText = () => {
-    if (status === AVAILABILITY_STATUS.AVAILABLE && availableCopies === 0) {
+    if (status === "AVAILABLE" && availableCopies === 0) {
       return "Unavailable";
     }
-    return status;
+    // Display user-friendly status text
+    return status.charAt(0) + status.slice(1).toLowerCase();
   };
 
   return (

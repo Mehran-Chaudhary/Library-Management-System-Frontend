@@ -31,15 +31,15 @@ const Home = () => {
           bookService.getBooks(),
           bookService.getFeaturedBooks(10),
           bookService.getNewArrivals(10),
-          genreService.getGenres().catch(() => []),
+          genreService.getGenres().catch(() => ({ data: [] })),
         ]);
 
         setBooks(booksResponse.data || []);
-        setFeaturedBooks(featured || []);
-        setNewArrivals(arrivals || []);
+        setFeaturedBooks(featured.data || []);
+        setNewArrivals(arrivals.data || []);
         
         // Prepare genre list with "All" as first option
-        const genreNames = genreList?.map(g => g.name) || [];
+        const genreNames = genreList.data?.map(g => g.name) || [];
         setGenres(["All", ...genreNames]);
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -134,7 +134,7 @@ const Home = () => {
             {featuredBooks.slice(0, 3).map((book, index) => (
               <img
                 key={book.id}
-                src={book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop"}
+                src={book.coverImageUrl || book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop"}
                 alt={book.title}
                 className={styles.stackedBook}
                 style={{ "--index": index }}
