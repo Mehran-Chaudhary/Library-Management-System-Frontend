@@ -16,62 +16,116 @@ const Home = () => {
   const [genres, setGenres] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("All");
+  const [selectedGenreId, setSelectedGenreId] = useState(null); // Track genre ID for API
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalBooks, setTotalBooks] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
 
-  // Fetch all data on mount
+  // Fetch initial data (genres, featured, new arrivals)
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      
+    const fetchInitialData = async () => {
       try {
-        // Fetch all data in parallel
-        const [booksResponse, featured, arrivals, genreList] = await Promise.all([
-          bookService.getBooks(),
+        const [featured, arrivals, genreList] = await Promise.all([
           bookService.getFeaturedBooks(10),
           bookService.getNewArrivals(10),
           genreService.getGenres().catch(() => []),
         ]);
 
-        // API interceptor now extracts data directly, handle both array and paginated response
-        const booksData = Array.isArray(booksResponse) ? booksResponse : (booksResponse?.books || booksResponse || []);
-        setBooks(booksData);
         setFeaturedBooks(Array.isArray(featured) ? featured : []);
         setNewArrivals(Array.isArray(arrivals) ? arrivals : []);
         
-        // Prepare genre list with "All" as first option
+        // Prepare genre list with "All" as first option and store full genre objects
         const genreArray = Array.isArray(genreList) ? genreList : [];
-        const genreNames = genreArray.map(g => g.name) || [];
-        setGenres(["All", ...genreNames]);
+        setGenres([{ id: null, name: "All" }, ...genreArray]);
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching initial data:", err);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // Fetch books when pagination, search, or genre changes
+  useEffect(() => {
+    const fetchBooks = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Build query params for backend
+        const params = {
+          page: currentPage,
+          limit: itemsPerPage,
+        };
+        
+        // Add search if present
+        if (searchQuery && searchQuery.trim()) {
+          params.search = searchQuery.trim();
+        }
+        
+        // Add genreId if a specific genre is selected
+        if (selectedGenreId) {
+          params.genreId = selectedGenreId;
+        }
+        
+        const booksResponse = await bookService.getBooks(params);
+
+        // API interceptor extracts .data, so booksResponse is now the data object
+        // Backend returns: { books: [...], total: 44, totalPages: 4, page: 1, limit: 12 }
+        if (booksResponse && typeof booksResponse === 'object' && 'books' in booksResponse) {
+          // Paginated response from backend
+          setBooks(booksResponse.books || []);
+          setTotalPages(booksResponse.totalPages || 1);
+          setTotalBooks(booksResponse.total || 0);
+          setCurrentPage(booksResponse.page || 1);
+        } else if (Array.isArray(booksResponse)) {
+          // Fallback: direct array response (legacy or error case)
+          setBooks(booksResponse);
+          setTotalPages(1);
+          setTotalBooks(booksResponse.length);
+        } else {
+          // Unknown format
+          setBooks([]);
+          setTotalPages(1);
+          setTotalBooks(0);
+        }
+      } catch (err) {
+        console.error("Error fetching books:", err);
         setError(err.message || "Failed to load books. Please try again later.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
+    fetchBooks();
+  }, [currentPage, itemsPerPage, searchQuery, selectedGenreId]);
 
-  // Filter books based on search and genre
-  const filteredBooks = useMemo(() => {
-    return books.filter((book) => {
-      const title = book.title || "";
-      const authorName = book.authors?.map(a => a.name).join(" ") || book.author || "";
-      
-      const matchesSearch =
-        title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        authorName.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const bookGenre = book.genres?.map(g => g.name) || [book.genre];
-      const matchesGenre =
-        selectedGenre === "All" || bookGenre.includes(selectedGenre);
-      
-      return matchesSearch && matchesGenre;
-    });
-  }, [books, searchQuery, selectedGenre]);
+  // Handle genre selection
+  const handleGenreChange = (genreName) => {
+    setSelectedGenre(genreName);
+    
+    // Find the genre ID from the genres array
+    if (genreName === "All") {
+      setSelectedGenreId(null);
+    } else {
+      const genre = genres.find(g => g.name === genreName);
+      setSelectedGenreId(genre?.id || null);
+    }
+    
+    // Reset to page 1 when filter changes
+    setCurrentPage(1);
+  };
+  
+  // Handle search change with debounce effect
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to page 1 when search changes
+  };
 
   if (isLoading) {
     return (
@@ -113,13 +167,13 @@ const Home = () => {
           <div className={styles.heroSearch}>
             <SearchBar
               value={searchQuery}
-              onChange={setSearchQuery}
+              onChange={handleSearchChange}
               placeholder="Search by title or author..."
             />
           </div>
           <div className={styles.stats}>
             <div className={styles.stat}>
-              <span className={styles.statValue}>{books.length}+</span>
+              <span className={styles.statValue}>{totalBooks}+</span>
               <span className={styles.statLabel}>Books</span>
             </div>
             <div className={styles.stat}>
@@ -194,16 +248,55 @@ const Home = () => {
         <div className={styles.filterBar}>
           <CategoryFilter
             selected={selectedGenre}
-            onChange={setSelectedGenre}
-            categories={genres}
+            onChange={handleGenreChange}
+            categories={genres.map(g => g.name)}
           />
         </div>
-        {filteredBooks.length > 0 ? (
-          <div className={styles.booksGrid}>
-            {filteredBooks.map((book) => (
-              <BookCard key={book.id} book={book} />
-            ))}
-          </div>
+        {books.length > 0 ? (
+          <>
+            <div className={styles.booksGrid}>
+              {books.map((book) => (
+                <BookCard key={book.id} book={book} />
+              ))}
+            </div>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className={styles.pagination}>
+                <button
+                  className={styles.pageBtn}
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                
+                <div className={styles.pageNumbers}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      className={`${styles.pageNumber} ${currentPage === page ? styles.active : ''}`}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  className={styles.pageBtn}
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+                
+                <div className={styles.pageInfo}>
+                  Showing page {currentPage} of {totalPages} ({totalBooks} total books)
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className={styles.noResults}>
             <p>No books found matching your criteria.</p>
@@ -212,6 +305,8 @@ const Home = () => {
               onClick={() => {
                 setSearchQuery("");
                 setSelectedGenre("All");
+                setSelectedGenreId(null);
+                setCurrentPage(1);
               }}
             >
               Reset Filters

@@ -79,22 +79,22 @@ const Cart = () => {
     setErrors({});
 
     try {
-      // Ensure pickup date is at least 24 hours in future (backend requirement)
+      // Get the common pickup date from first item or use default
       let pickupDate;
       if (cartBooks[0]?.pickupDate) {
         pickupDate = new Date(cartBooks[0].pickupDate).toISOString();
       } else {
-        // Default to tomorrow if no date set
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(10, 0, 0, 0);
-        pickupDate = tomorrow.toISOString();
+        // Default to 24+ hours in future (backend requirement)
+        const minDate = new Date();
+        minDate.setHours(minDate.getHours() + 25); // 25 hours to be safe
+        minDate.setMinutes(0, 0, 0);
+        pickupDate = minDate.toISOString();
       }
 
-      // Format items for backend API - use book.id as fallback for bookId
+      // Format items for backend API - MUST use borrowingDuration!
       const items = cartBooks.map((item) => ({
         bookId: item.bookId || item.book?.id,
-        borrowingDuration: item.duration || 14,
+        borrowingDuration: item.borrowingDuration || item.duration || 14, // Backend expects borrowingDuration!
       }));
 
       // Call backend API to create reservation
@@ -114,8 +114,9 @@ const Cart = () => {
           author: item.book.author,
           coverImage: item.book.coverImageUrl || item.book.coverImage,
           pickupDate: item.pickupDate,
-          duration: item.duration,
-          dueDate: calculateDueDate(item.pickupDate, item.duration).toISOString(),
+          borrowingDuration: item.borrowingDuration || item.duration || 14,
+          duration: item.duration || item.borrowingDuration || 14, // Keep both for compatibility
+          dueDate: calculateDueDate(item.pickupDate, item.borrowingDuration || item.duration || 14).toISOString(),
         })),
       });
 
@@ -130,8 +131,9 @@ const Cart = () => {
             author: item.book.author,
             coverImage: item.book.coverImageUrl || item.book.coverImage,
             pickupDate: item.pickupDate,
-            duration: item.duration,
-            dueDate: calculateDueDate(item.pickupDate, item.duration).toISOString(),
+            borrowingDuration: item.borrowingDuration || item.duration || 14,
+            duration: item.duration || item.borrowingDuration || 14,
+            dueDate: calculateDueDate(item.pickupDate, item.borrowingDuration || item.duration || 14).toISOString(),
           })),
         } 
       });
@@ -223,10 +225,11 @@ const Cart = () => {
                       Duration
                     </label>
                     <select
-                      value={item.duration}
+                      value={item.borrowingDuration || item.duration || 14}
                       onChange={(e) =>
                         handleUpdateItem(item.bookId, {
-                          duration: parseInt(e.target.value),
+                          borrowingDuration: parseInt(e.target.value),
+                          duration: parseInt(e.target.value), // Keep both for compatibility
                         })
                       }
                       className={styles.durationSelect}
@@ -242,7 +245,7 @@ const Cart = () => {
                     <div className={styles.dueDate}>
                       Due:{" "}
                       {formatDate(
-                        calculateDueDate(item.pickupDate, item.duration)
+                        calculateDueDate(item.pickupDate, item.borrowingDuration || item.duration || 14)
                       )}
                     </div>
                   )}
