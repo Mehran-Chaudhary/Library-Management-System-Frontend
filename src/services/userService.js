@@ -15,8 +15,8 @@ const userService = {
       const response = await api.get('/users/profile');
       
       // Update stored user data
-      if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data));
+      if (response) {
+        localStorage.setItem('user', JSON.stringify(response));
       }
       
       return response;
@@ -36,8 +36,8 @@ const userService = {
       const response = await api.patch('/users/profile', updates);
       
       // Update local storage with new data
-      if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data));
+      if (response) {
+        localStorage.setItem('user', JSON.stringify(response));
       }
       
       return response;

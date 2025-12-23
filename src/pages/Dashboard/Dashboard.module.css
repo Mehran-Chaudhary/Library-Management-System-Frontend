@@ -417,6 +417,37 @@
   border-top: 1px solid var(--border-color);
 }
 
+/* QR Code Section */
+.qrCodeSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(168, 85, 247, 0.05));
+  border: 2px dashed var(--primary-color);
+  border-radius: 1rem;
+}
+
+.qrCodeImage {
+  width: 120px;
+  height: 120px;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.qrCodeSection span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.statusBadge.confirmed {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
 /* Wishlist */
 .wishlistGrid {
   display: grid;

@@ -24,14 +24,17 @@ const reservationService = {
   /**
    * Confirm a reservation
    * @param {string} reservationId - Reservation UUID
-   * @param {string} paymentMethod - Payment method (CASH, CARD, ONLINE)
+   * @param {Object} options - Confirmation options (termsAccepted, paymentMethod)
    * @returns {Promise} Confirmed reservation with QR code
    */
-  async confirmReservation(reservationId, paymentMethod) {
+  async confirmReservation(reservationId, options = {}) {
     try {
       const response = await api.patch(
         `/reservations/${reservationId}/confirm`,
-        { paymentMethod }
+        { 
+          termsAccepted: options.termsAccepted ?? true,
+          paymentMethod: options.paymentMethod 
+        }
       );
       return response;
     } catch (error) {

@@ -9,7 +9,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button, Input, Select, LoadingSpinner } from "../../components";
-import { useUser } from "../../context";
+import { useUser, useAuth } from "../../context";
+import { reservationService } from "../../services";
 import { getBookById } from "../../data";
 import {
   BORROWING_DURATIONS,
@@ -73,27 +74,64 @@ const Cart = () => {
     }
 
     setIsSubmitting(true);
+    setErrors({});
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      // Use the first item's pickup date for the reservation
+      const pickupDate = cartBooks[0]?.pickupDate 
+        ? new Date(cartBooks[0].pickupDate).toISOString()
+        : new Date().toISOString();
 
-    const books = cartBooks.map((item) => ({
-      bookId: item.bookId,
-      title: item.book.title,
-      author: item.book.author,
-      coverImage: item.book.coverImageUrl || item.book.coverImage,
-      pickupDate: item.pickupDate,
-      duration: item.duration,
-      dueDate: calculateDueDate(item.pickupDate, item.duration).toISOString(),
-    }));
+      // Format items for backend API
+      const items = cartBooks.map((item) => ({
+        bookId: item.bookId,
+        borrowingDuration: item.duration,
+      }));
 
-    createReservation({
-      ...formData,
-      books,
-    });
+      // Call backend API to create reservation
+      const reservation = await reservationService.createReservation({
+        pickupDate,
+        items,
+        notes: `Reservation by ${formData.fullName}`,
+      });
 
-    setIsSubmitting(false);
-    navigate("/checkout/confirmation");
+      // Also save locally for UI state
+      createReservation({
+        ...formData,
+        ...reservation,
+        books: cartBooks.map((item) => ({
+          bookId: item.bookId,
+          title: item.book.title,
+          author: item.book.author,
+          coverImage: item.book.coverImageUrl || item.book.coverImage,
+          pickupDate: item.pickupDate,
+          duration: item.duration,
+          dueDate: calculateDueDate(item.pickupDate, item.duration).toISOString(),
+        })),
+      });
+
+      // Navigate to confirmation with reservation data
+      navigate("/checkout/confirmation", { 
+        state: { 
+          reservation,
+          formData,
+          books: cartBooks.map((item) => ({
+            bookId: item.bookId,
+            title: item.book.title,
+            author: item.book.author,
+            coverImage: item.book.coverImageUrl || item.book.coverImage,
+            pickupDate: item.pickupDate,
+            duration: item.duration,
+            dueDate: calculateDueDate(item.pickupDate, item.duration).toISOString(),
+          })),
+        } 
+      });
+    } catch (error) {
+      console.error("Checkout error:", error);
+      setErrors({ general: error.message || "Failed to create reservation. Please try again." });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (cart.length === 0) {

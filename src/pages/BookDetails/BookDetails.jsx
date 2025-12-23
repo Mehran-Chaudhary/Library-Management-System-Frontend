@@ -62,11 +62,12 @@ const BookDetails = () => {
       try {
         const [bookData, bookReviews] = await Promise.all([
           bookService.getBookById(id),
-          reviewService.getBookReviews(id).catch(() => ({ data: [] })),
+          reviewService.getBookReviews(id).catch(() => []),
         ]);
         
-        setBook(bookData.data);
-        setReviews(bookReviews.data || []);
+        // API interceptor now extracts data directly
+        setBook(bookData);
+        setReviews(Array.isArray(bookReviews) ? bookReviews : []);
       } catch (err) {
         console.error("Error fetching book:", err);
         setError(err.message || "Failed to load book details");

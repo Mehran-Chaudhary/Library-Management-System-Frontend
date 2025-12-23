@@ -57,18 +57,18 @@ const Dashboard = () => {
 
       try {
         const [borrowings, reservations, history, wishlist, stats] = await Promise.all([
-          borrowingService.getActiveBorrowings().catch(() => ({ data: [] })),
-          reservationService.getActiveReservations().catch(() => ({ data: [] })),
-          reservationService.getReservationHistory().catch(() => ({ data: [] })),
-          wishlistService.getWishlist().catch(() => ({ data: [] })),
-          borrowingService.getDashboardStats().catch(() => ({ data: null })),
+          borrowingService.getActiveBorrowings().catch(() => []),
+          reservationService.getActiveReservations().catch(() => []),
+          reservationService.getReservationHistory().catch(() => []),
+          wishlistService.getWishlist().catch(() => []),
+          borrowingService.getDashboardStats().catch(() => null),
         ]);
 
-        setActiveBorrowings(borrowings.data || []);
-        setActiveReservations(reservations.data || []);
-        setReservationHistory(history.data || []);
-        setWishlistItems(wishlist.data || []);
-        setDashboardStats(stats.data);
+        setActiveBorrowings(borrowings || []);
+        setActiveReservations(reservations || []);
+        setReservationHistory(history || []);
+        setWishlistItems(wishlist || []);
+        setDashboardStats(stats);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError(err.message || "Failed to load dashboard data");
@@ -113,8 +113,8 @@ const Dashboard = () => {
           prev.filter(r => r.id !== cancelModal.reservationId)
         );
         // Refresh history
-        const history = await reservationService.getReservationHistory().catch(() => ({ data: [] }));
-        setReservationHistory(history.data || []);
+        const history = await reservationService.getReservationHistory().catch(() => []);
+        setReservationHistory(history || []);
         setCancelModal({ isOpen: false, reservationId: null });
       } catch (err) {
         console.error("Error cancelling reservation:", err);
@@ -357,6 +357,17 @@ const Dashboard = () => {
                         );
                       })}
                     </div>
+                    {/* Show QR code for confirmed reservations */}
+                    {reservation.status === "confirmed" && reservation.qrCode && (
+                      <div className={styles.qrCodeSection}>
+                        <img 
+                          src={reservation.qrCode} 
+                          alt="Pickup QR Code"
+                          className={styles.qrCodeImage}
+                        />
+                        <span>Show at pickup</span>
+                      </div>
+                    )}
                     <div className={styles.reservationActions}>
                       <Button
                         variant="ghost"

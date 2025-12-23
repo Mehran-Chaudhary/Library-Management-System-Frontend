@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect } from "react";
+import { createContext, useContext, useReducer, useEffect, useRef } from "react";
 import {
   getStorageItem,
   setStorageItem,
@@ -149,6 +149,7 @@ export const useUser = () => {
 
 export const UserProvider = ({ children }) => {
   const [state, dispatch] = useReducer(userReducer, initialState);
+  const isInitialized = useRef(false);
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -172,26 +173,34 @@ export const UserProvider = ({ children }) => {
         totalBorrowed: savedBorrowed.total || 0,
       },
     });
+    
+    // Mark as initialized after loading
+    isInitialized.current = true;
   }, []);
 
-  // Save state to localStorage on changes
+  // Save state to localStorage on changes (only after initialization)
   useEffect(() => {
+    if (!isInitialized.current) return;
     setStorageItem(STORAGE_KEYS.CART, state.cart);
   }, [state.cart]);
 
   useEffect(() => {
+    if (!isInitialized.current) return;
     setStorageItem(STORAGE_KEYS.USER, state.user);
   }, [state.user]);
 
   useEffect(() => {
+    if (!isInitialized.current) return;
     setStorageItem(STORAGE_KEYS.RESERVATIONS, state.reservations);
   }, [state.reservations]);
 
   useEffect(() => {
+    if (!isInitialized.current) return;
     setStorageItem(STORAGE_KEYS.WISHLIST, state.wishlist);
   }, [state.wishlist]);
 
   useEffect(() => {
+    if (!isInitialized.current) return;
     setStorageItem(STORAGE_KEYS.BORROWED_BOOKS, {
       books: state.borrowedBooks,
       total: state.totalBorrowed,

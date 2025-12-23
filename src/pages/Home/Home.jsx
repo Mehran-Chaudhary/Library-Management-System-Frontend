@@ -31,15 +31,18 @@ const Home = () => {
           bookService.getBooks(),
           bookService.getFeaturedBooks(10),
           bookService.getNewArrivals(10),
-          genreService.getGenres().catch(() => ({ data: [] })),
+          genreService.getGenres().catch(() => []),
         ]);
 
-        setBooks(booksResponse.data || []);
-        setFeaturedBooks(featured.data || []);
-        setNewArrivals(arrivals.data || []);
+        // API interceptor now extracts data directly, handle both array and paginated response
+        const booksData = Array.isArray(booksResponse) ? booksResponse : (booksResponse?.books || booksResponse || []);
+        setBooks(booksData);
+        setFeaturedBooks(Array.isArray(featured) ? featured : []);
+        setNewArrivals(Array.isArray(arrivals) ? arrivals : []);
         
         // Prepare genre list with "All" as first option
-        const genreNames = genreList.data?.map(g => g.name) || [];
+        const genreArray = Array.isArray(genreList) ? genreList : [];
+        const genreNames = genreArray.map(g => g.name) || [];
         setGenres(["All", ...genreNames]);
       } catch (err) {
         console.error("Error fetching data:", err);

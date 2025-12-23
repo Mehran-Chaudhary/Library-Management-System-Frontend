@@ -23,9 +23,9 @@ const authService = {
       });
       
       // Store token and user data in localStorage
-      if (response.data?.accessToken) {
-        localStorage.setItem('accessToken', response.data.accessToken);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+      if (response?.accessToken) {
+        localStorage.setItem('accessToken', response.accessToken);
+        localStorage.setItem('user', JSON.stringify(response.user));
       }
       
       return response;
@@ -49,12 +49,12 @@ const authService = {
       });
       
       // Store token and user data
-      if (response.data?.accessToken) {
-        localStorage.setItem('accessToken', response.data.accessToken);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+      if (response?.accessToken) {
+        localStorage.setItem('accessToken', response.accessToken);
+        localStorage.setItem('user', JSON.stringify(response.user));
         
         // Apply dark mode preference if enabled
-        if (response.data.user?.darkModeEnabled) {
+        if (response.user?.darkModeEnabled) {
           document.documentElement.classList.add('dark');
         } else {
           document.documentElement.classList.remove('dark');
@@ -83,11 +83,11 @@ const authService = {
       const response = await api.get('/auth/me');
       
       // Update stored user data
-      if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data));
+      if (response) {
+        localStorage.setItem('user', JSON.stringify(response));
       }
       
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get current user error:', error);
       // If token is expired or invalid, clear storage

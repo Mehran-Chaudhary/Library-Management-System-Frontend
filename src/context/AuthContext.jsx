@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     try {
       const response = await authService.login(email, password);
-      setUser(response.data.user);
+      setUser(response.user);
       return response;
     } catch (err) {
       setError(err.message);
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     try {
       const response = await authService.register(userData);
-      setUser(response.data.user);
+      setUser(response.user);
       return response;
     } catch (err) {
       setError(err.message);
@@ -127,7 +127,7 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = useCallback(async (updates) => {
     try {
       const response = await userService.updateUserProfile(updates);
-      setUser(response.data);
+      setUser(response);
       return response;
     } catch (err) {
       console.error('Failed to update profile:', err);

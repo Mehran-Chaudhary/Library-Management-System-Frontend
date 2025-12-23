@@ -27,7 +27,13 @@ api.interceptors.request.use(
 // Response interceptor - handle errors globally
 api.interceptors.response.use(
   (response) => {
-    return response.data;
+    // Backend wraps responses in { success, data, message }
+    // Extract the data field for cleaner service layer code
+    const backendResponse = response.data;
+    if (backendResponse && typeof backendResponse === 'object' && 'data' in backendResponse) {
+      return backendResponse.data;
+    }
+    return backendResponse;
   },
   (error) => {
     // Handle 401 Unauthorized - redirect to login
