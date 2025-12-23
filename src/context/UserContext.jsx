@@ -115,25 +115,27 @@ export const useUser = () => {
   return context;
 };
 
-export const UserProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(userReducer, initialState);
-  const isInitialized = useRef(false);
-
-  // Load cart from localStorage on mount
-  useEffect(() => {
+// Lazy initializer function - runs once synchronously before first render
+const getInitialState = () => {
+  try {
     const savedCart = getStorageItem(STORAGE_KEYS.CART, []);
-    
-    dispatch({
-      type: "LOAD_STATE",
-      payload: {
-        cart: savedCart,
-      },
-    });
-    
-    // Mark as initialized after loading
-    isInitialized.current = true;
-    
-    // If user is logged in, fetch wishlist from backend
+    return {
+      ...initialState,
+      cart: savedCart,
+    };
+  } catch (error) {
+    console.error("Failed to load cart from storage:", error);
+    return initialState;
+  }
+};
+
+export const UserProvider = ({ children }) => {
+  // Use lazy initialization to load cart from localStorage SYNCHRONOUSLY
+  const [state, dispatch] = useReducer(userReducer, null, getInitialState);
+  const isInitialized = useRef(true); // Already initialized via lazy init
+
+  // Fetch wishlist from backend on mount if user is logged in
+  useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       fetchWishlistFromBackend();
