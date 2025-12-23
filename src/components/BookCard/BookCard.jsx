@@ -47,19 +47,6 @@ const BookCard = ({ book }) => {
   // Get rating - backend returns averageRating
   const bookRating = book.averageRating || book.rating || 0;
   const reviewCount = book.reviewCount || book.reviews?.length || 0;
-  
-  // Debug log for first book only
-  if (!window.bookCardDebugLogged) {
-    console.log("📚 BookCard Debug - First Book:", {
-      title: book.title,
-      averageRating: book.averageRating,
-      rating: book.rating,
-      reviewCount: book.reviewCount,
-      reviews: book.reviews,
-      finalRating: bookRating
-    });
-    window.bookCardDebugLogged = true;
-  }
 
   const handleWishlistClick = (e) => {
     e.preventDefault();

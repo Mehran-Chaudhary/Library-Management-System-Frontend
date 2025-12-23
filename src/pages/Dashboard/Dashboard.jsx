@@ -64,13 +64,6 @@ const Dashboard = () => {
           borrowingService.getDashboardStats().catch((err) => { console.error("Stats error:", err); return null; }),
         ]);
 
-        console.log("=== DASHBOARD DATA ===");
-        console.log("Borrowings:", borrowings);
-        console.log("Reservations:", reservations);
-        console.log("History:", history);
-        console.log("Wishlist:", wishlist);
-        console.log("Stats:", stats);
-
         // Handle different response formats
         const borrowingsArray = Array.isArray(borrowings) ? borrowings : (borrowings?.data || []);
         const reservationsArray = Array.isArray(reservations) ? reservations : (reservations?.data || []);
