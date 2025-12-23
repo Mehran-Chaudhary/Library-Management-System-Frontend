@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Heart, ShoppingCart } from "lucide-react";
 import Rating from "../Rating";
 import { useUser } from "../../context";
@@ -6,6 +6,7 @@ import { AVAILABILITY_STATUS } from "../../utils";
 import styles from "./BookCard.module.css";
 
 const BookCard = ({ book }) => {
+  const navigate = useNavigate();
   const {
     addToWishlist,
     removeFromWishlist,
@@ -42,6 +43,23 @@ const BookCard = ({ book }) => {
   
   // Cover image with fallback - backend uses coverImageUrl
   const coverImage = book.coverImageUrl || book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
+  
+  // Get rating - backend returns averageRating
+  const bookRating = book.averageRating || book.rating || 0;
+  const reviewCount = book.reviewCount || book.reviews?.length || 0;
+  
+  // Debug log for first book only
+  if (!window.bookCardDebugLogged) {
+    console.log("📚 BookCard Debug - First Book:", {
+      title: book.title,
+      averageRating: book.averageRating,
+      rating: book.rating,
+      reviewCount: book.reviewCount,
+      reviews: book.reviews,
+      finalRating: bookRating
+    });
+    window.bookCardDebugLogged = true;
+  }
 
   const handleWishlistClick = (e) => {
     e.preventDefault();
@@ -56,8 +74,10 @@ const BookCard = ({ book }) => {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Navigate to book details page where user can properly select pickup date and duration
+    // This ensures complete reservation flow with all required information
     if (!inCart && isAvailable && canAddToCart) {
-      addToCart(book.id, null, 14);
+      navigate(`/book/${book.id}`);
     }
   };
 
@@ -118,7 +138,7 @@ const BookCard = ({ book }) => {
         <h3 className={styles.title}>{book.title}</h3>
         <p className={styles.author}>by {authorName}</p>
         <div className={styles.footer}>
-          <Rating value={book.averageRating || book.rating || 0} size="small" />
+          <Rating value={bookRating} size="small" />
           <span className={styles.copies}>
             {availableCopies}/{totalCopies} available
           </span>

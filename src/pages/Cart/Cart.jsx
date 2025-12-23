@@ -280,7 +280,7 @@ const Cart = () => {
               name="fullName"
               value={formData.fullName}
               onChange={handleInputChange}
-              placeholder="John Doe"
+              placeholder="Mehran Akhtar"
               error={errors.fullName}
               fullWidth
             />
@@ -291,7 +291,7 @@ const Cart = () => {
               type="email"
               value={formData.email}
               onChange={handleInputChange}
-              placeholder="john@example.com"
+              placeholder="mehran.dev.au@gmail.com"
               error={errors.email}
               fullWidth
             />

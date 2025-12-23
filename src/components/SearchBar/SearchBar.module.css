@@ -11,11 +11,12 @@
   left: 1rem;
   color: var(--text-muted);
   pointer-events: none;
+  z-index: 1;
 }
 
 .input {
   width: 100%;
-  padding: 0.875rem 1rem 0.875rem 3rem;
+  padding: 0.875rem 3rem 0.875rem 3rem;
   font-size: 1rem;
   font-family: inherit;
   color: var(--text-primary);
@@ -33,4 +34,30 @@
 
 .input::placeholder {
   color: var(--text-muted);
+}
+
+.searchBtn {
+  position: absolute;
+  right: 0.375rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.searchBtn:hover {
+  background: var(--primary-hover);
+  transform: scale(1.05);
+}
+
+.searchBtn:active {
+  transform: scale(0.95);
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   BookCard,
   SearchBar,
@@ -25,6 +25,9 @@ const Home = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalBooks, setTotalBooks] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  
+  // Ref for scrolling to results
+  const resultsRef = useRef(null);
 
   // Fetch initial data (genres, featured, new arrivals)
   useEffect(() => {
@@ -126,6 +129,22 @@ const Home = () => {
     setSearchQuery(query);
     setCurrentPage(1); // Reset to page 1 when search changes
   };
+  
+  // Handle search button click - scroll to results
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+    
+    // Scroll to results section after a brief delay to ensure state update
+    setTimeout(() => {
+      if (resultsRef.current) {
+        resultsRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }
+    }, 100);
+  };
 
   if (isLoading) {
     return (
@@ -167,7 +186,7 @@ const Home = () => {
           <div className={styles.heroSearch}>
             <SearchBar
               value={searchQuery}
-              onChange={handleSearchChange}
+              onSearch={handleSearch}
               placeholder="Search by title or author..."
             />
           </div>
@@ -239,7 +258,7 @@ const Home = () => {
       )}
 
       {/* All Books Section */}
-      <section className={styles.section}>
+      <section className={styles.section} ref={resultsRef}>
         <div className={styles.sectionHeader}>
           <div className={styles.sectionTitle}>
             <h2>Browse Collection</h2>

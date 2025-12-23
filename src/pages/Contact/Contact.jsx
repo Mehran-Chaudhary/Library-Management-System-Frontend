@@ -119,7 +119,7 @@ const Contact = () => {
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleInputChange}
-                placeholder="John Doe"
+                placeholder="Mehran Akhtar"
                 error={errors.fullName}
                 fullWidth
               />
@@ -130,7 +130,7 @@ const Contact = () => {
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="john@example.com"
+                placeholder="mehran.dev.au@gmail.com"
                 error={errors.email}
                 fullWidth
               />
@@ -186,9 +186,9 @@ const Contact = () => {
               <div>
                 <h4>Address</h4>
                 <p>
-                  123 Library Street
+                  Air University Islamabad
                   <br />
-                  Book City, BC 12345
+                  Pakistan
                 </p>
               </div>
             </div>
@@ -199,7 +199,7 @@ const Contact = () => {
               </div>
               <div>
                 <h4>Phone</h4>
-                <p>+1 (555) 123-4567</p>
+                <p>+92 312 444 7335</p>
               </div>
             </div>
 
@@ -209,7 +209,7 @@ const Contact = () => {
               </div>
               <div>
                 <h4>Email</h4>
-                <p>hello@booknest.com</p>
+                <p>mehran.dev.au@gmail.com</p>
               </div>
             </div>
 

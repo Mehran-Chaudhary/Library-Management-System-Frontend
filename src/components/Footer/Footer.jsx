@@ -57,15 +57,15 @@ const Footer = () => {
             <h4>Contact Info</h4>
             <div className={styles.contactItem}>
               <MapPin size={18} />
-              <span>123 Library Street, Book City, BC 12345</span>
+              <span>Air University Islamabad, Pakistan</span>
             </div>
             <div className={styles.contactItem}>
               <Phone size={18} />
-              <span>+1 (555) 123-4567</span>
+              <span>+92 312 444 7335</span>
             </div>
             <div className={styles.contactItem}>
               <Mail size={18} />
-              <span>hello@booknest.com</span>
+              <span>mehran.dev.au@gmail.com</span>
             </div>
           </div>
         </div>

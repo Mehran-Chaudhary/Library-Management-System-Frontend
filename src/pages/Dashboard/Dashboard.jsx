@@ -57,17 +57,30 @@ const Dashboard = () => {
 
       try {
         const [borrowings, reservations, history, wishlist, stats] = await Promise.all([
-          borrowingService.getActiveBorrowings().catch(() => []),
-          reservationService.getActiveReservations().catch(() => []),
-          reservationService.getReservationHistory().catch(() => []),
-          wishlistService.getWishlist().catch(() => []),
-          borrowingService.getDashboardStats().catch(() => null),
+          borrowingService.getActiveBorrowings().catch((err) => { console.error("Borrowings error:", err); return []; }),
+          reservationService.getActiveReservations().catch((err) => { console.error("Reservations error:", err); return []; }),
+          reservationService.getReservationHistory().catch((err) => { console.error("History error:", err); return []; }),
+          wishlistService.getWishlist().catch((err) => { console.error("Wishlist error:", err); return []; }),
+          borrowingService.getDashboardStats().catch((err) => { console.error("Stats error:", err); return null; }),
         ]);
 
-        setActiveBorrowings(borrowings || []);
-        setActiveReservations(reservations || []);
-        setReservationHistory(history || []);
-        setWishlistItems(wishlist || []);
+        console.log("=== DASHBOARD DATA ===");
+        console.log("Borrowings:", borrowings);
+        console.log("Reservations:", reservations);
+        console.log("History:", history);
+        console.log("Wishlist:", wishlist);
+        console.log("Stats:", stats);
+
+        // Handle different response formats
+        const borrowingsArray = Array.isArray(borrowings) ? borrowings : (borrowings?.data || []);
+        const reservationsArray = Array.isArray(reservations) ? reservations : (reservations?.data || []);
+        const historyArray = Array.isArray(history) ? history : (history?.data || []);
+        const wishlistArray = Array.isArray(wishlist) ? wishlist : (wishlist?.data || []);
+
+        setActiveBorrowings(borrowingsArray);
+        setActiveReservations(reservationsArray);
+        setReservationHistory(historyArray);
+        setWishlistItems(wishlistArray);
         setDashboardStats(stats);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
