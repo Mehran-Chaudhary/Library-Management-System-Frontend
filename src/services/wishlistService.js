@@ -95,10 +95,11 @@ const wishlistService = {
   async isInWishlist(bookId) {
     try {
       const response = await api.get(`/wishlist/check/${bookId}`);
-      return response.isInWishlist;
+      // API interceptor already extracts .data, so response is the data object
+      return response?.isInWishlist ?? false;
     } catch (error) {
       console.error('Check wishlist error:', error);
-      throw error;
+      return false; // Return false instead of throwing on error
     }
   },
 
@@ -123,10 +124,11 @@ const wishlistService = {
   async getWishlistCount() {
     try {
       const response = await api.get('/wishlist/count');
-      return response.count;
+      // API interceptor already extracts .data, so response is the data object
+      return response?.count ?? 0;
     } catch (error) {
       console.error('Get wishlist count error:', error);
-      throw error;
+      return 0; // Return 0 instead of throwing on error
     }
   },
 };

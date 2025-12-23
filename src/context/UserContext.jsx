@@ -163,10 +163,16 @@ export const UserProvider = ({ children }) => {
   }, [state.cart]);
 
   // Cart functions - book parameter is optional but recommended to store book data
-  const addToCart = useCallback((bookId, pickupDate, duration, book = null) => {
+  const addToCart = useCallback((bookId, pickupDate, borrowingDuration, book = null) => {
     dispatch({
       type: "ADD_TO_CART",
-      payload: { bookId, pickupDate, duration, book },
+      payload: { 
+        bookId, 
+        pickupDate, 
+        borrowingDuration, // Use borrowingDuration to match backend!
+        duration: borrowingDuration, // Keep for backward compatibility
+        book 
+      },
     });
   }, []);
 

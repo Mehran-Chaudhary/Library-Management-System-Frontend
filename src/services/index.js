@@ -9,4 +9,6 @@ export { default as borrowingService } from './borrowingService';
 export { default as wishlistService } from './wishlistService';
 export { default as reviewService } from './reviewService';
 export { default as contactService } from './contactService';
+export { default as cartService } from './cartService';
+
 
