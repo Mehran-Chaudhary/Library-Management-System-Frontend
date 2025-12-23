@@ -407,7 +407,7 @@ const Dashboard = () => {
                   const book = item.book || item;
                   const coverImage = book.coverImageUrl || book.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop";
                   const authorName = book.authors?.map(a => a.name).join(", ") || book.author || "Unknown";
-                  const genreName = book.genres?.[0]?.name || book.genre || "General";
+                  const genreName = book.genres?.[0]?.name || (typeof book.genre === 'object' ? book.genre?.name : book.genre) || "General";
                   
                   return (
                     <div key={item.id || book.id} className={styles.wishlistCard}>

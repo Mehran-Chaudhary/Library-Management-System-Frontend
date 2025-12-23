@@ -1,21 +1,23 @@
-import { createContext, useContext, useReducer, useEffect, useRef } from "react";
+import { createContext, useContext, useReducer, useEffect, useRef, useCallback } from "react";
 import {
   getStorageItem,
   setStorageItem,
   STORAGE_KEYS,
   MAX_BOOKS_PER_RESERVATION,
 } from "../utils";
-import { v4 as uuidv4 } from "uuid";
+import { wishlistService } from "../services";
 
 const UserContext = createContext();
 
 const initialState = {
   user: null,
   cart: [],
-  wishlist: [],
+  wishlist: [], // Now stores full wishlist items from backend
+  wishlistBookIds: [], // Quick lookup for bookIds
   reservations: [],
   borrowedBooks: [],
   totalBorrowed: 0,
+  isWishlistLoading: false,
 };
 
 const userReducer = (state, action) => {
@@ -55,82 +57,48 @@ const userReducer = (state, action) => {
     case "CLEAR_CART":
       return { ...state, cart: [] };
 
-    case "ADD_TO_WISHLIST":
-      if (state.wishlist.find((id) => id === action.payload)) {
+    // Wishlist actions - now sync with backend
+    case "SET_WISHLIST":
+      return { 
+        ...state, 
+        wishlist: action.payload,
+        wishlistBookIds: action.payload.map(item => item.book?.id || item.bookId),
+      };
+
+    case "SET_WISHLIST_LOADING":
+      return { ...state, isWishlistLoading: action.payload };
+
+    case "ADD_TO_WISHLIST_OPTIMISTIC":
+      if (state.wishlistBookIds.includes(action.payload)) {
         return state;
       }
-      return { ...state, wishlist: [...state.wishlist, action.payload] };
-
-    case "REMOVE_FROM_WISHLIST":
-      return {
-        ...state,
-        wishlist: state.wishlist.filter((id) => id !== action.payload),
+      return { 
+        ...state, 
+        wishlistBookIds: [...state.wishlistBookIds, action.payload],
       };
 
-    case "ADD_RESERVATION": {
-      const newReservation = {
-        id: uuidv4(),
-        ...action.payload,
-        createdAt: new Date().toISOString(),
-        status: "pending",
-      };
+    case "REMOVE_FROM_WISHLIST_OPTIMISTIC":
       return {
         ...state,
-        reservations: [...state.reservations, newReservation],
+        wishlist: state.wishlist.filter((item) => (item.book?.id || item.bookId) !== action.payload),
+        wishlistBookIds: state.wishlistBookIds.filter((id) => id !== action.payload),
+      };
+
+    case "SET_RESERVATIONS":
+      return { ...state, reservations: action.payload };
+
+    case "ADD_RESERVATION":
+      return {
+        ...state,
+        reservations: [...state.reservations, action.payload],
         cart: [],
       };
-    }
 
     case "CANCEL_RESERVATION":
       return {
         ...state,
         reservations: state.reservations.map((res) =>
           res.id === action.payload ? { ...res, status: "cancelled" } : res
-        ),
-      };
-
-    case "PICKUP_RESERVATION": {
-      const reservation = state.reservations.find(
-        (res) => res.id === action.payload
-      );
-      if (!reservation) return state;
-
-      const newBorrowedBooks = reservation.books.map((book) => ({
-        ...book,
-        reservationId: reservation.id,
-        borrowedAt: new Date().toISOString(),
-        extended: false,
-      }));
-
-      return {
-        ...state,
-        reservations: state.reservations.map((res) =>
-          res.id === action.payload ? { ...res, status: "picked_up" } : res
-        ),
-        borrowedBooks: [...state.borrowedBooks, ...newBorrowedBooks],
-        totalBorrowed: state.totalBorrowed + newBorrowedBooks.length,
-      };
-    }
-
-    case "RETURN_BOOK":
-      return {
-        ...state,
-        borrowedBooks: state.borrowedBooks.filter(
-          (book) => book.bookId !== action.payload
-        ),
-      };
-
-    case "EXTEND_BORROWING":
-      return {
-        ...state,
-        borrowedBooks: state.borrowedBooks.map((book) =>
-          book.bookId === action.payload.bookId
-            ? {
-                ...book,
-                dueDate: action.payload.newDueDate,
-                extended: true,
-              }
-            : book
         ),
       };
 
@@ -151,120 +119,146 @@ export const UserProvider = ({ children }) => {
   const [state, dispatch] = useReducer(userReducer, initialState);
   const isInitialized = useRef(false);
 
-  // Load state from localStorage on mount
+  // Load cart from localStorage on mount
   useEffect(() => {
     const savedCart = getStorageItem(STORAGE_KEYS.CART, []);
-    const savedUser = getStorageItem(STORAGE_KEYS.USER, null);
-    const savedReservations = getStorageItem(STORAGE_KEYS.RESERVATIONS, []);
-    const savedWishlist = getStorageItem(STORAGE_KEYS.WISHLIST, []);
-    const savedBorrowed = getStorageItem(STORAGE_KEYS.BORROWED_BOOKS, {
-      books: [],
-      total: 0,
-    });
-
+    
     dispatch({
       type: "LOAD_STATE",
       payload: {
         cart: savedCart,
-        user: savedUser,
-        reservations: savedReservations,
-        wishlist: savedWishlist,
-        borrowedBooks: savedBorrowed.books || [],
-        totalBorrowed: savedBorrowed.total || 0,
       },
     });
     
     // Mark as initialized after loading
     isInitialized.current = true;
+    
+    // If user is logged in, fetch wishlist from backend
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      fetchWishlistFromBackend();
+    }
   }, []);
 
-  // Save state to localStorage on changes (only after initialization)
+  // Fetch wishlist from backend
+  const fetchWishlistFromBackend = async () => {
+    dispatch({ type: "SET_WISHLIST_LOADING", payload: true });
+    try {
+      const wishlistItems = await wishlistService.getWishlist();
+      const items = Array.isArray(wishlistItems) ? wishlistItems : [];
+      dispatch({ type: "SET_WISHLIST", payload: items });
+    } catch (error) {
+      console.error("Failed to fetch wishlist:", error);
+    } finally {
+      dispatch({ type: "SET_WISHLIST_LOADING", payload: false });
+    }
+  };
+
+  // Save cart to localStorage on changes (only after initialization)
   useEffect(() => {
     if (!isInitialized.current) return;
     setStorageItem(STORAGE_KEYS.CART, state.cart);
   }, [state.cart]);
 
-  useEffect(() => {
-    if (!isInitialized.current) return;
-    setStorageItem(STORAGE_KEYS.USER, state.user);
-  }, [state.user]);
-
-  useEffect(() => {
-    if (!isInitialized.current) return;
-    setStorageItem(STORAGE_KEYS.RESERVATIONS, state.reservations);
-  }, [state.reservations]);
-
-  useEffect(() => {
-    if (!isInitialized.current) return;
-    setStorageItem(STORAGE_KEYS.WISHLIST, state.wishlist);
-  }, [state.wishlist]);
-
-  useEffect(() => {
-    if (!isInitialized.current) return;
-    setStorageItem(STORAGE_KEYS.BORROWED_BOOKS, {
-      books: state.borrowedBooks,
-      total: state.totalBorrowed,
-    });
-  }, [state.borrowedBooks, state.totalBorrowed]);
-
-  const addToCart = (bookId, pickupDate, duration) => {
+  // Cart functions - book parameter is optional but recommended to store book data
+  const addToCart = useCallback((bookId, pickupDate, duration, book = null) => {
     dispatch({
       type: "ADD_TO_CART",
-      payload: { bookId, pickupDate, duration },
+      payload: { bookId, pickupDate, duration, book },
     });
-  };
+  }, []);
 
-  const removeFromCart = (bookId) => {
+  const removeFromCart = useCallback((bookId) => {
     dispatch({ type: "REMOVE_FROM_CART", payload: bookId });
-  };
+  }, []);
 
-  const updateCartItem = (bookId, updates) => {
+  const updateCartItem = useCallback((bookId, updates) => {
     dispatch({ type: "UPDATE_CART_ITEM", payload: { bookId, updates } });
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     dispatch({ type: "CLEAR_CART" });
-  };
+  }, []);
 
-  const addToWishlist = (bookId) => {
-    dispatch({ type: "ADD_TO_WISHLIST", payload: bookId });
-  };
+  const isInCart = useCallback((bookId) => 
+    state.cart.some((item) => item.bookId === bookId),
+  [state.cart]);
 
-  const removeFromWishlist = (bookId) => {
-    dispatch({ type: "REMOVE_FROM_WISHLIST", payload: bookId });
-  };
+  // Wishlist functions - sync with backend API
+  const fetchWishlist = useCallback(async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
 
-  const isInWishlist = (bookId) => state.wishlist.includes(bookId);
+    dispatch({ type: "SET_WISHLIST_LOADING", payload: true });
+    try {
+      const wishlistItems = await wishlistService.getWishlist();
+      const items = Array.isArray(wishlistItems) ? wishlistItems : [];
+      dispatch({ type: "SET_WISHLIST", payload: items });
+    } catch (error) {
+      console.error("Failed to fetch wishlist:", error);
+    } finally {
+      dispatch({ type: "SET_WISHLIST_LOADING", payload: false });
+    }
+  }, []);
 
-  const isInCart = (bookId) =>
-    state.cart.some((item) => item.bookId === bookId);
+  const addToWishlist = useCallback(async (bookId) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      console.warn("Cannot add to wishlist: not authenticated");
+      return;
+    }
 
-  const setUser = (userData) => {
+    // Optimistic update
+    dispatch({ type: "ADD_TO_WISHLIST_OPTIMISTIC", payload: bookId });
+
+    try {
+      await wishlistService.addToWishlist(bookId);
+      // Refetch to get full wishlist data
+      await fetchWishlist();
+    } catch (error) {
+      console.error("Failed to add to wishlist:", error);
+      // Revert optimistic update
+      dispatch({ type: "REMOVE_FROM_WISHLIST_OPTIMISTIC", payload: bookId });
+    }
+  }, [fetchWishlist]);
+
+  const removeFromWishlist = useCallback(async (bookId) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    // Optimistic update
+    dispatch({ type: "REMOVE_FROM_WISHLIST_OPTIMISTIC", payload: bookId });
+
+    try {
+      await wishlistService.removeFromWishlist(bookId);
+    } catch (error) {
+      console.error("Failed to remove from wishlist:", error);
+      // Refetch on error
+      await fetchWishlist();
+    }
+  }, [fetchWishlist]);
+
+  const isInWishlist = useCallback((bookId) => 
+    state.wishlistBookIds.includes(bookId),
+  [state.wishlistBookIds]);
+
+  // User functions
+  const setUser = useCallback((userData) => {
     dispatch({ type: "SET_USER", payload: userData });
-  };
+  }, []);
 
-  const createReservation = (reservationData) => {
+  // Reservation functions
+  const createReservation = useCallback((reservationData) => {
     dispatch({ type: "ADD_RESERVATION", payload: reservationData });
-    return state.reservations.length > 0
-      ? state.reservations[state.reservations.length - 1]
-      : null;
-  };
+  }, []);
 
-  const cancelReservation = (reservationId) => {
+  const setReservations = useCallback((reservations) => {
+    dispatch({ type: "SET_RESERVATIONS", payload: reservations });
+  }, []);
+
+  const cancelReservation = useCallback((reservationId) => {
     dispatch({ type: "CANCEL_RESERVATION", payload: reservationId });
-  };
-
-  const pickupReservation = (reservationId) => {
-    dispatch({ type: "PICKUP_RESERVATION", payload: reservationId });
-  };
-
-  const returnBook = (bookId) => {
-    dispatch({ type: "RETURN_BOOK", payload: bookId });
-  };
-
-  const extendBorrowing = (bookId, newDueDate) => {
-    dispatch({ type: "EXTEND_BORROWING", payload: { bookId, newDueDate } });
-  };
+  }, []);
 
   const canAddToCart = state.cart.length < MAX_BOOKS_PER_RESERVATION;
 
@@ -282,10 +276,9 @@ export const UserProvider = ({ children }) => {
         isInCart,
         setUser,
         createReservation,
+        setReservations,
         cancelReservation,
-        pickupReservation,
-        returnBook,
-        extendBorrowing,
+        fetchWishlist,
         canAddToCart,
       }}
     >

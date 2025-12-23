@@ -4,9 +4,10 @@ export const isValidEmail = (email) => {
   return emailRegex.test(email);
 };
 
-// Library membership ID validation (format: LIB-XXXXX)
+// Library membership ID validation (format: LIB-XXXXX or LIB-XXXXX-XXXX)
 export const isValidMembershipId = (id) => {
-  const idRegex = /^LIB-[A-Z0-9]{5}$/;
+  // Accept LIB- followed by alphanumeric characters and optional dashes
+  const idRegex = /^LIB-[A-Z0-9][A-Z0-9-]{3,}$/i;
   return idRegex.test(id);
 };
 
@@ -38,7 +39,7 @@ export const validateField = (name, value) => {
     case "membershipId":
       if (!value.trim()) return "Membership ID is required";
       if (!isValidMembershipId(value))
-        return "Invalid format. Use LIB-XXXXX (5 alphanumeric characters)";
+        return "Invalid format. Must start with LIB- followed by alphanumeric characters";
       return "";
     case "pickupDate":
       if (!value) return "Pickup date is required";

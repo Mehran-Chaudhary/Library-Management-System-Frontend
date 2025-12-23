@@ -35,10 +35,12 @@ const Cart = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Map cart items to include book data - use stored book data or fallback to local data
   const cartBooks = cart
     .map((item) => ({
       ...item,
-      book: getBookById(item.bookId),
+      // Use stored book data if available, otherwise try to get from local data (legacy support)
+      book: item.book || getBookById(item.bookId),
     }))
     .filter((item) => item.book);
 
@@ -77,15 +79,22 @@ const Cart = () => {
     setErrors({});
 
     try {
-      // Use the first item's pickup date for the reservation
-      const pickupDate = cartBooks[0]?.pickupDate 
-        ? new Date(cartBooks[0].pickupDate).toISOString()
-        : new Date().toISOString();
+      // Ensure pickup date is at least 24 hours in future (backend requirement)
+      let pickupDate;
+      if (cartBooks[0]?.pickupDate) {
+        pickupDate = new Date(cartBooks[0].pickupDate).toISOString();
+      } else {
+        // Default to tomorrow if no date set
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(10, 0, 0, 0);
+        pickupDate = tomorrow.toISOString();
+      }
 
-      // Format items for backend API
+      // Format items for backend API - use book.id as fallback for bookId
       const items = cartBooks.map((item) => ({
-        bookId: item.bookId,
-        borrowingDuration: item.duration,
+        bookId: item.bookId || item.book?.id,
+        borrowingDuration: item.duration || 14,
       }));
 
       // Call backend API to create reservation
@@ -289,7 +298,7 @@ const Cart = () => {
               name="membershipId"
               value={formData.membershipId}
               onChange={handleInputChange}
-              placeholder="LIB-XXXXX"
+              placeholder="LIB-XXXXXXXX"
               error={errors.membershipId}
               fullWidth
             />

@@ -134,16 +134,22 @@ const BookDetails = () => {
   const inWishlist = isInWishlist(book.id);
   const inCart = isInCart(book.id);
 
-  const handleWishlistToggle = () => {
+  const handleWishlistToggle = async () => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: { pathname: `/book/${book.id}` } } });
+      return;
+    }
+    
     if (inWishlist) {
-      removeFromWishlist(book.id);
+      await removeFromWishlist(book.id);
     } else {
-      addToWishlist(book.id);
+      await addToWishlist(book.id);
     }
   };
 
   const handleReserve = () => {
-    addToCart(book.id, reserveForm.pickupDate, reserveForm.duration);
+    // Pass the book data along with the cart item
+    addToCart(book.id, reserveForm.pickupDate, reserveForm.duration, book);
     setIsReserveModalOpen(false);
   };
 
