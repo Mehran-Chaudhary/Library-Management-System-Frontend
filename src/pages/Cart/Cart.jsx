@@ -11,7 +11,6 @@ import {
 import { Button, Input, Select, LoadingSpinner } from "../../components";
 import { useUser, useAuth } from "../../context";
 import { reservationService } from "../../services";
-import { getBookById } from "../../data";
 import {
   BORROWING_DURATIONS,
   MAX_BOOKS_PER_RESERVATION,
@@ -35,14 +34,13 @@ const Cart = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Map cart items to include book data - use stored book data or fallback to local data
+  // Map cart items to include book data - cart already stores full book objects
   const cartBooks = cart
     .map((item) => ({
       ...item,
-      // Use stored book data if available, otherwise try to get from local data (legacy support)
-      book: item.book || getBookById(item.bookId),
+      book: item.book, // Book data is already stored in cart from cartService
     }))
-    .filter((item) => item.book);
+    .filter((item) => item.book); // Filter out items without book data
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
