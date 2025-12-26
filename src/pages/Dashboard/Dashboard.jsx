@@ -92,10 +92,13 @@ const Dashboard = () => {
       try {
         const result = await borrowingService.extendBorrowing(extendModal.borrowing.id);
         // Update local state
+        // API interceptor already extracts data, so result IS the data directly
+        // Handle both possible response formats: result.newDueDate or result.dueDate
+        const newDueDate = result?.newDueDate || result?.dueDate || result?.data?.newDueDate;
         setActiveBorrowings(prev => 
           prev.map(b => 
             b.id === extendModal.borrowing.id 
-              ? { ...b, dueDate: result.data.newDueDate, hasBeenExtended: true }
+              ? { ...b, dueDate: newDueDate || b.dueDate, hasBeenExtended: true }
               : b
           )
         );
