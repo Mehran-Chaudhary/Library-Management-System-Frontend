@@ -2,6 +2,51 @@
 
 > Complete API reference for implementing the Admin/Librarian Dashboard
 
+---
+
+## ⚠️ CRITICAL: Response Data Structure
+
+> [!IMPORTANT]
+> **All API responses are wrapped in a standardized format.** The axios interceptor in `api.js` extracts `response.data.data` automatically, so services receive the inner data directly.
+
+### Paginated Endpoints Response Format
+
+Paginated admin endpoints (`/admin/books`, `/admin/users`, `/admin/reservations`, `/admin/borrowings`) return data in a **nested structure**:
+
+| Endpoint | Response Structure | Array Property |
+|----------|-------------------|----------------|
+| `/admin/books` | `{ books: [...], total, page, totalPages }` | `response.books` |
+| `/admin/users` | `{ users: [...], total, page, totalPages }` | `response.users` |
+| `/admin/reservations` | `{ reservations: [...], total, page, totalPages }` | `response.reservations` |
+| `/admin/borrowings` | `{ borrowings: [...], total, page, totalPages }` | `response.borrowings` |
+
+**Correct usage example:**
+```javascript
+const fetchBooks = async () => {
+  const response = await adminService.getBooks({ page: 1, limit: 10 });
+  // Response: { books: [...], total: 150, page: 1, totalPages: 15 }
+  
+  setBooks(response.books);        // ✅ CORRECT: Extract the named array
+  setTotal(response.total);         // ✅ Pagination metadata
+  setTotalPages(response.totalPages);
+};
+```
+
+**Common mistake:**
+```javascript
+setBooks(response.data);  // ❌ WRONG: response.data is an OBJECT, not an array!
+setBooks(response);       // ❌ WRONG: response is the whole object with pagination
+```
+
+### Non-Paginated Endpoints
+
+Simple list endpoints (`/genres`, `/authors`, `/contact`) return arrays directly:
+```javascript
+const genres = await genreService.getGenres();  // Returns array directly
+```
+
+---
+
 ## Authentication
 
 All admin endpoints require JWT authentication with **ADMIN** or **LIBRARIAN** role.

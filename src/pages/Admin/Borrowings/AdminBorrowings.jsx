@@ -44,9 +44,10 @@ const AdminBorrowings = () => {
         setTotalPages(1);
         setTotalItems(response.length);
       } else {
-        setBorrowings(response?.items || response?.data || []);
+        // Backend returns { borrowings: [...], total, page, totalPages }
+        setBorrowings(response?.borrowings || response?.items || []);
         setTotalPages(response?.totalPages || 1);
-        setTotalItems(response?.total || response?.totalItems || 0);
+        setTotalItems(response?.total || 0);
       }
     } catch (error) {
       console.error("Error fetching borrowings:", error);
@@ -196,7 +197,8 @@ const AdminBorrowings = () => {
               <tbody>
                 {filteredBorrowings.map((borrowing) => {
                   const overdueStatus = borrowing.isOverdue || isOverdue(borrowing.dueDate);
-                  const fineAmount = borrowing.fineAmount || calculateLateFine(borrowing.dueDate, LATE_FINE_PER_DAY);
+                  const calculatedFine = calculateLateFine(borrowing.dueDate, LATE_FINE_PER_DAY);
+                  const fineAmount = parseFloat(borrowing.fineAmount) || calculatedFine || 0;
                   
                   return (
                     <tr key={borrowing.id} className={overdueStatus ? styles.overdueRow : ""}>
@@ -326,7 +328,7 @@ const AdminBorrowings = () => {
               <div className={styles.fineWarning}>
                 <AlertTriangle size={16} />
                 <span>
-                  This book is overdue. A fine of ${calculateLateFine(selectedBorrowing.dueDate, LATE_FINE_PER_DAY).toFixed(2)} may apply.
+                  This book is overdue. A fine of ${(parseFloat(calculateLateFine(selectedBorrowing.dueDate, LATE_FINE_PER_DAY)) || 0).toFixed(2)} may apply.
                 </span>
               </div>
             )}
@@ -368,7 +370,7 @@ const AdminBorrowings = () => {
             <div className={styles.fineDetails}>
               <span>Fine Amount:</span>
               <strong>
-                ${(selectedBorrowing.fineAmount || calculateLateFine(selectedBorrowing.dueDate, LATE_FINE_PER_DAY)).toFixed(2)}
+                ${(parseFloat(selectedBorrowing.fineAmount) || parseFloat(calculateLateFine(selectedBorrowing.dueDate, LATE_FINE_PER_DAY)) || 0).toFixed(2)}
               </strong>
             </div>
             <div className={styles.modalActions}>

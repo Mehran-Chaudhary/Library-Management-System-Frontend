@@ -61,9 +61,10 @@ const AdminBooks = () => {
         setTotalPages(1);
         setTotalItems(response.length);
       } else {
-        setBooks(response?.items || response?.data || []);
+        // Backend returns { books: [...], total, page, totalPages }
+        setBooks(response?.books || response?.items || []);
         setTotalPages(response?.totalPages || 1);
-        setTotalItems(response?.total || response?.totalItems || 0);
+        setTotalItems(response?.total || 0);
       }
     } catch (error) {
       console.error("Error fetching books:", error);

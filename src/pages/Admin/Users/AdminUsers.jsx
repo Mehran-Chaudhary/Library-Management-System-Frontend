@@ -28,9 +28,10 @@ const AdminUsers = () => {
         setTotalPages(1);
         setTotalItems(response.length);
       } else {
-        setUsers(response?.items || response?.data || []);
+        // Backend returns { users: [...], total, page, totalPages }
+        setUsers(response?.users || response?.items || []);
         setTotalPages(response?.totalPages || 1);
-        setTotalItems(response?.total || response?.totalItems || 0);
+        setTotalItems(response?.total || 0);
       }
     } catch (error) {
       console.error("Error fetching users:", error);

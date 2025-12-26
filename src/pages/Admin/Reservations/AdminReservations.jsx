@@ -52,9 +52,10 @@ const AdminReservations = () => {
         setTotalPages(1);
         setTotalItems(response.length);
       } else {
-        setReservations(response?.items || response?.data || []);
+        // Backend returns { reservations: [...], total, page, totalPages }
+        setReservations(response?.reservations || response?.items || []);
         setTotalPages(response?.totalPages || 1);
-        setTotalItems(response?.total || response?.totalItems || 0);
+        setTotalItems(response?.total || 0);
       }
     } catch (error) {
       console.error("Error fetching reservations:", error);
