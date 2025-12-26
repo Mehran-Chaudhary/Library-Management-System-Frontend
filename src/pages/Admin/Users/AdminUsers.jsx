@@ -121,7 +121,7 @@ const AdminUsers = () => {
               <div className={styles.userStats}>
                 <div className={styles.stat}>
                   <Book size={14} />
-                  <span>{user.borrowingCount || 0} borrowed</span>
+                  <span>{user.activeBorrowingsCount || 0} borrowed</span>
                 </div>
                 <div className={styles.stat}>
                   <span>Joined {formatDate(user.createdAt)}</span>

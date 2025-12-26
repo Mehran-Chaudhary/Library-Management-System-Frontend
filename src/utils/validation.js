@@ -49,11 +49,12 @@ export const validateField = (name, value) => {
       return "";
     case "message":
       if (!value.trim()) return "Message is required";
-      if (value.trim().length < 10)
-        return "Message must be at least 10 characters";
+      if (value.trim().length < 20)
+        return "Message must be at least 20 characters";
       return "";
     case "subject":
       if (!value.trim()) return "Subject is required";
+      if (value.trim().length < 5) return "Subject must be at least 5 characters";
       return "";
     default:
       return "";

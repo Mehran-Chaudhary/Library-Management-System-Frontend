@@ -110,11 +110,11 @@ const AdminMessages = () => {
               <div className={styles.messageHeader}>
                 <div className={styles.sender}>
                   <div className={styles.senderAvatar}>
-                    {message.name?.[0] || "U"}
+                    {message.senderName?.[0] || "U"}
                   </div>
                   <div className={styles.senderInfo}>
-                    <span className={styles.senderName}>{message.name}</span>
-                    <span className={styles.senderEmail}>{message.email}</span>
+                    <span className={styles.senderName}>{message.senderName}</span>
+                    <span className={styles.senderEmail}>{message.senderEmail}</span>
                   </div>
                 </div>
                 <div className={styles.messageDate}>
@@ -166,11 +166,11 @@ const AdminMessages = () => {
             <div className={styles.detailHeader}>
               <div className={styles.detailSender}>
                 <div className={styles.detailAvatar}>
-                  {selectedMessage.name?.[0] || "U"}
+                  {selectedMessage.senderName?.[0] || "U"}
                 </div>
                 <div>
-                  <h4>{selectedMessage.name}</h4>
-                  <p>{selectedMessage.email}</p>
+                  <h4>{selectedMessage.senderName}</h4>
+                  <p>{selectedMessage.senderEmail}</p>
                 </div>
               </div>
               <span className={styles.detailDate}>

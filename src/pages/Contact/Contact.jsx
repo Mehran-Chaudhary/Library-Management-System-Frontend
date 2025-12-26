@@ -50,9 +50,22 @@ const Contact = () => {
     try {
       // Use authenticated endpoint if logged in, public otherwise
       if (isAuthenticated) {
-        await contactService.sendAuthenticatedMessage(formData);
+        // For authenticated users, only send subject and message
+        const payload = {
+          subject: formData.subject,
+          message: formData.message,
+        };
+        console.log("Sending authenticated message:", payload);
+        await contactService.sendAuthenticatedMessage(payload);
       } else {
-        await contactService.sendMessage(formData);
+        // For public users, send full contact info
+        // Backend expects 'name' and 'email' fields
+        await contactService.sendContactMessage({
+          name: formData.fullName,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+        });
       }
       
       setIsSubmitted(true);

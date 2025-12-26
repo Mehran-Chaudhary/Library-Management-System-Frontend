@@ -28,10 +28,15 @@ const contactService = {
    */
   async sendAuthenticatedMessage(messageData) {
     try {
+      console.log("contactService.sendAuthenticatedMessage - payload:", messageData);
       const response = await api.post('/contact/authenticated', messageData);
       return response;
     } catch (error) {
       console.error('Send authenticated message error:', error);
+      // Log the full error response if available
+      if (error.response) {
+        console.error('Full error response:', error.response.data);
+      }
       throw error;
     }
   },
