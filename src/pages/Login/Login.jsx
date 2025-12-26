@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { isAdmin, isLibrarian } from '../../utils/auth';
 import { Button, Input } from '../../components';
 import styles from './Login.module.css';
 
@@ -51,7 +52,9 @@ const Login = () => {
 
     try {
       await login(formData.email, formData.password);
-      navigate(from, { replace: true });
+      // Redirect based on user role - admin/librarian go to admin dashboard
+      const redirectPath = isAdmin() || isLibrarian() ? '/admin' : (from !== '/login' ? from : '/');
+      navigate(redirectPath, { replace: true });
     } catch {
       // Error is handled by context
     }

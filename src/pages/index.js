@@ -8,3 +8,16 @@ export { default as Login } from "./Login";
 export { default as Register } from "./Register";
 export { default as Unauthorized } from "./Unauthorized";
 
+// Admin Module
+export {
+  AdminLayout,
+  AdminDashboard,
+  AdminBooks,
+  AdminReservations,
+  AdminBorrowings,
+  AdminUsers,
+  AdminGenres,
+  AdminAuthors,
+  AdminMessages,
+} from "./Admin";
+

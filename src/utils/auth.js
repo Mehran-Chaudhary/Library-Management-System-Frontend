@@ -26,36 +26,49 @@ export const logout = () => {
   window.location.href = '/login';
 };
 
-// Check if user has specific role
+// Check if user has specific role (case-insensitive)
 export const hasRole = (requiredRole) => {
   const user = getStoredUser();
   if (!user) return false;
   
+  const userRole = user.role?.toUpperCase();
   const roleHierarchy = {
     'ADMIN': 3,
     'LIBRARIAN': 2,
     'MEMBER': 1,
   };
   
-  return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
+  return roleHierarchy[userRole] >= roleHierarchy[requiredRole?.toUpperCase()];
 };
 
-// Check if user is admin
+// Check if user is admin (case-insensitive)
 export const isAdmin = () => {
   const user = getStoredUser();
-  return user?.role === 'ADMIN';
+  return user?.role?.toUpperCase() === 'ADMIN';
 };
 
-// Check if user is librarian
+// Check if user is librarian (case-insensitive)
 export const isLibrarian = () => {
   const user = getStoredUser();
-  return user?.role === 'LIBRARIAN';
+  return user?.role?.toUpperCase() === 'LIBRARIAN';
 };
 
-// Check if user is member
+// Check if user is member (case-insensitive)
 export const isMember = () => {
   const user = getStoredUser();
-  return user?.role === 'MEMBER';
+  return user?.role?.toUpperCase() === 'MEMBER';
+};
+
+// Get redirect path based on user role
+export const getRedirectPath = () => {
+  const user = getStoredUser();
+  if (!user) return '/login';
+  
+  const role = user.role?.toUpperCase();
+  if (role === 'ADMIN' || role === 'LIBRARIAN') {
+    return '/admin';
+  }
+  return '/';
 };
 
 // Check if user can manage books (Admin or Librarian)
@@ -79,4 +92,5 @@ export default {
   isMember,
   canManageBooks,
   canManageUsers,
+  getRedirectPath,
 };
